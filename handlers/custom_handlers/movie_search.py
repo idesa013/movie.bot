@@ -1,8 +1,10 @@
+from datetime import datetime
 from telebot.types import Message
 import requests
 from loader import bot
-from config_data.config import TMBD_API_KEY
+from config_data.config import DATE_FORMAT, TMBD_API_KEY
 from states.movie import MovieSearchState
+from database.logs import log_movie_search
 
 
 @bot.message_handler(state=MovieSearchState.waiting_for_title)
@@ -25,6 +27,9 @@ def search_movie(message: Message):
 
     movie = results[0]
     movie_id = movie.get("id")
+    search_time = datetime.fromtimestamp(message.date).strftime(DATE_FORMAT)
+
+    log_movie_search(message.from_user.id, movie_id, search_time)
 
     credits = requests.get(
         f"https://api.themoviedb.org/3/movie/{movie_id}/credits",
