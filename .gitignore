@@ -59,7 +59,7 @@ instance/
 .webassets-cache
 
 # FastAPI / general app data
-*.db
+#*.db
 
 # IDEs
 .vscode/
