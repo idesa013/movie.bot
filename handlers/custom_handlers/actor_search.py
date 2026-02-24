@@ -1,12 +1,10 @@
 from telebot.types import Message
 from loader import bot
 from states.actor import ActorSearchState
-from api.tmbd_actor import (
-    search_actor,
-    get_actor_details,
-    get_actor_movie_credits,
-)
+from api.tmdb_actor import search_actor, get_actor_details, get_actor_movie_credits
 from html import escape
+from keyboards.inline.actor_movies import actor_movies_markup  # импорт клавиатуры
+from utils.movie_service import send_movie_card
 
 
 @bot.message_handler(state=ActorSearchState.waiting_for_actor_name)
@@ -15,7 +13,6 @@ def process_actor_search(message: Message):
 
     data = search_actor(query)
     results = data.get("results")
-
     if not results:
         bot.send_message(message.chat.id, "Actor not found")
         return
@@ -34,19 +31,19 @@ def process_actor_search(message: Message):
 
     biography = details.get("biography") or "No biography available"
     text += f"{escape(biography[:1000])}\n\n"
-
     text += "🎬 Known for:\n"
 
-    movies = credits.get("cast", [])[:8]
-    for movie in movies:
-        title = escape(movie.get("title", ""))
-        character = escape(movie.get("character", ""))
-        text += f"• {title} — {character}\n"
+    # Ограничим до 8 фильмов
+    known_movies = credits.get("cast", [])[:8]
 
+    # Фото актёра
     if details.get("profile_path"):
         photo = "https://image.tmdb.org/t/p/w500" + details["profile_path"]
         bot.send_photo(message.chat.id, photo)
 
-    bot.send_message(message.chat.id, text, parse_mode="HTML")
+    # Создаём клавиатуру через функцию
+    markup = actor_movies_markup(known_movies)
 
+    # Отправляем текст и клавиатуру
+    bot.send_message(message.chat.id, text, parse_mode="HTML", reply_markup=markup)
     bot.delete_state(message.from_user.id, message.chat.id)
