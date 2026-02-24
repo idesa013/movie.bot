@@ -7,6 +7,13 @@ from config_data.config import DATE_FORMAT, TMBD_API_KEY
 from states.movie import MovieSearchState
 from database.logs import log_movie_search
 from html import escape  # для безопасного отображения текста
+from database.favorites import remove_favorite  # создадим эту функцию
+from keyboards.inline.add_to_fav import add_favorites_button
+from database.favorites import check_favorite  # для проверки наличия в избранном
+
+
+# Временное хранилище данных о фильмах для callback
+bot_data = {}
 
 
 @bot.message_handler(state=MovieSearchState.waiting_for_title)
@@ -86,7 +93,19 @@ def search_movie(message: Message):
         bot.send_photo(message.chat.id, poster)
 
     # Текст отдельным сообщением
-    bot.send_message(message.chat.id, text, parse_mode="HTML")
+    # Проверяем, есть ли фильм у пользователя в избранном
+    in_favorites = check_favorite(message.from_user.id, movie_id)
+
+    # Сохраняем данные для callback
+    bot_data[message.from_user.id] = {
+        "movie_id": movie_id,
+        "genre_ids": genre_ids_str,
+        "movie_name": movie.get("title", "Movie"),
+        "search_time": search_time,
+    }
+
+    markup = add_favorites_button(movie_id, in_favorites=in_favorites)
+    bot.send_message(message.chat.id, text, parse_mode="HTML", reply_markup=markup)
 
     # Очистка состояния
     bot.delete_state(message.from_user.id, message.chat.id)
