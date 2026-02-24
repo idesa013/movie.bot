@@ -1,7 +1,7 @@
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 
-def movie_button():
+def actor_button():
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.add(KeyboardButton("🎬 Movie Search"))
+    kb.add(KeyboardButton("🎭 Search Actor"))
     return kb
