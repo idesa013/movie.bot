@@ -30,7 +30,8 @@ def process_actor_search(message: Message):
     )
 
     biography = details.get("biography") or "No biography available"
-    text += f"{escape(biography[:1000])}\n\n"
+    # text += f"{escape(biography[:1000])}\n\n"
+    text += f"<blockquote expandable>{escape(biography)}</blockquote>\n\n"
     text += "🎬 Known for:\n"
 
     # Ограничим до 8 фильмов
