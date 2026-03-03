@@ -1,10 +1,10 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
-def actor_movies_markup(movies: list) -> InlineKeyboardMarkup:
+def director_movies_markup(movies: list) -> InlineKeyboardMarkup:
     """
-    Кнопки фильмов актёра.
-    При переходе из карточки актёра используем источник 'fav' (для searched_from фильма).
+    Кнопки фильмов режиссёра.
+    При переходе из карточки режиссёра используем источник 'dir' (для searched_from фильма).
     """
     markup = InlineKeyboardMarkup(row_width=2)
 
@@ -15,7 +15,7 @@ def actor_movies_markup(movies: list) -> InlineKeyboardMarkup:
         buttons.append(
             InlineKeyboardButton(
                 text=title,
-                callback_data=f"movie_{movie_id}_fav",
+                callback_data=f"movie_{movie_id}_dir",
             )
         )
 

@@ -6,5 +6,6 @@ def main_menu():
     kb.add(
         KeyboardButton("🎬 Movie Search"),
         KeyboardButton("🎭 Search Actor"),
+        KeyboardButton("🎬 Search Director"),
     )
     return kb
