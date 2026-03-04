@@ -12,28 +12,31 @@ def log_movie_search(
     movie_id: int,
     search_time: str,
     genre_ids: str = "",
-    searched_from: str = "str",
+    searched_from: str = "movie",
 ) -> None:
-    """Логируем просмотр/поиск фильма.
-
-    searched_from: 'str' | 'fav' | 'dir'
+    """Log movie search/open.
+    searched_from: 'movie' | 'actor' | 'director'
     """
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    # Совместимость: если колонка searched_from ещё не добавлена - пишем по старой схеме
-    if _has_column(cur, "search_log", "searched_from"):
+    table = "movie_search_log"
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
+    if not cur.fetchone():
+        table = "search_log"
+
+    if _has_column(cur, table, "searched_from"):
         cur.execute(
-            """
-            INSERT INTO search_log (user_id, movie_id, search_time, genre_ids, searched_from)
+            f"""
+            INSERT INTO {table} (user_id, movie_id, search_time, genre_ids, searched_from)
             VALUES (?, ?, ?, ?, ?)
             """,
             (user_id, movie_id, search_time, genre_ids, searched_from),
         )
     else:
         cur.execute(
-            """
-            INSERT INTO search_log (user_id, movie_id, search_time, genre_ids)
+            f"""
+            INSERT INTO {table} (user_id, movie_id, search_time, genre_ids)
             VALUES (?, ?, ?, ?)
             """,
             (user_id, movie_id, search_time, genre_ids),
@@ -43,16 +46,7 @@ def log_movie_search(
     conn.close()
 
 
-def log_actor_search(
-    user_id: int,
-    actor_id: int,
-    search_time: str,
-    searched_from: str = "str",
-) -> None:
-    """Логируем поиск/открытие карточки актёра.
-
-    searched_from: обычно 'str' (поиск) или 'mov' (из карточки фильма)
-    """
+def log_actor_search(user_id: int, actor_id: int, search_time: str, searched_from: str = "str") -> None:
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
@@ -77,16 +71,7 @@ def log_actor_search(
     conn.close()
 
 
-def log_director_search(
-    user_id: int,
-    director_id: int,
-    search_time: str,
-    searched_from: str = "str",
-) -> None:
-    """Логируем поиск/открытие карточки режиссёра.
-
-    searched_from: обычно 'str' (поиск) или 'mov' (из карточки фильма)
-    """
+def log_director_search(user_id: int, director_id: int, search_time: str, searched_from: str = "str") -> None:
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 

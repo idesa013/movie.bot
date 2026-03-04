@@ -4,26 +4,33 @@ from config_data.config import TMBD_API_KEY
 BASE_URL = "https://api.themoviedb.org/3"
 
 
-def tmdb_get(endpoint: str, params: dict = None) -> dict:
-    """
-    Универсальная функция для GET-запросов к TMDB API
-    """
+def tmdb_get(endpoint: str, params: dict | None = None) -> dict:
     if params is None:
         params = {}
     params["api_key"] = TMBD_API_KEY
-    params["language"] = "ru-RU"
+    params.setdefault("language", "ru-RU")
     url = f"{BASE_URL}/{endpoint}"
-    response = requests.get(url, params=params)
-    response.raise_for_status()  # чтобы падало при ошибке HTTP
+    response = requests.get(url, params=params, timeout=12)
+    response.raise_for_status()
     return response.json()
 
 
-# Теперь твои функции можно переписать так:
+def get_movie_details(movie_id: int, language: str | None = None) -> dict:
+    params = {}
+    if language:
+        params["language"] = language
+    return tmdb_get(f"movie/{movie_id}", params=params)
 
 
-def get_movie_details(movie_id: int) -> dict:
-    return tmdb_get(f"movie/{movie_id}")
+def get_movie_credits(movie_id: int, language: str | None = None) -> dict:
+    params = {}
+    if language:
+        params["language"] = language
+    return tmdb_get(f"movie/{movie_id}/credits", params=params)
 
 
-def get_movie_credits(movie_id: int) -> dict:
-    return tmdb_get(f"movie/{movie_id}/credits")
+def search_movie(query: str, language: str | None = None) -> dict:
+    params = {"query": query}
+    if language:
+        params["language"] = language
+    return tmdb_get("search/movie", params=params)

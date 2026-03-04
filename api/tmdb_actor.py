@@ -4,28 +4,83 @@ from config_data.config import TMBD_API_KEY
 BASE_URL = "https://api.themoviedb.org/3"
 
 
-def tmdb_get(endpoint: str, params: dict = None) -> dict:
-    """
-    Универсальная функция для GET-запросов к TMDB API
-    """
+def tmdb_get(endpoint: str, params: dict | None = None) -> dict:
     if params is None:
         params = {}
     params["api_key"] = TMBD_API_KEY
-    params.setdefault("language", "ru-RU")  # по умолчанию русский язык
+    params.setdefault("language", "ru-RU")
     url = f"{BASE_URL}/{endpoint}"
-    response = requests.get(url, params=params)
+    response = requests.get(url, params=params, timeout=12)
     response.raise_for_status()
     return response.json()
 
 
-# Переписанные функции
-def search_actor(query: str) -> dict:
-    return tmdb_get("search/person", params={"query": query})
+def _split_lang(language: str) -> tuple[str, str]:
+    # "en-US" -> ("en","US"), "ru-RU" -> ("ru","RU")
+    if not language:
+        return ("en", "US")
+    parts = language.split("-")
+    if len(parts) == 2:
+        return parts[0], parts[1]
+    return parts[0], ""
 
 
-def get_actor_details(actor_id: int) -> dict:
-    return tmdb_get(f"person/{actor_id}")
+def _get_person_bio_from_translations(person_id: int, language: str) -> str | None:
+    """
+    Надёжно вытаскиваем биографию из /person/{id}/translations.
+    Это нужно, потому что person/{id}?language=... не всегда возвращает нужный перевод.
+    """
+    data = tmdb_get(f"person/{person_id}/translations", params={"language": "en-US"})
+    translations = data.get("translations") or []
+    iso_639, iso_3166 = _split_lang(language)
+
+    # сначала точное совпадение (en + US)
+    for tr in translations:
+        if tr.get("iso_639_1") == iso_639 and (
+            not iso_3166 or tr.get("iso_3166_1") == iso_3166
+        ):
+            bio = ((tr.get("data") or {}).get("biography") or "").strip()
+            if bio:
+                return bio
+
+    # потом просто совпадение по языку (en)
+    for tr in translations:
+        if tr.get("iso_639_1") == iso_639:
+            bio = ((tr.get("data") or {}).get("biography") or "").strip()
+            if bio:
+                return bio
+
+    return None
 
 
-def get_actor_movie_credits(actor_id: int) -> dict:
-    return tmdb_get(f"person/{actor_id}/movie_credits")
+def search_actor(query: str, language: str | None = None) -> dict:
+    params = {"query": query}
+    if language:
+        params["language"] = language
+    return tmdb_get("search/person", params=params)
+
+
+def get_actor_details(actor_id: int, language: str = "ru-RU") -> dict:
+    data = tmdb_get(f"person/{actor_id}", params={"language": language})
+
+    # 1) пробуем translations для требуемого языка
+    bio = _get_person_bio_from_translations(actor_id, language)
+    if bio:
+        data["biography"] = bio
+        data["_bio_lang"] = language
+        return data
+
+    # 2) если русский и пусто — fallback на EN (как было)
+    bio_raw = (data.get("biography") or "").strip()
+    if language.startswith("ru") and not bio_raw:
+        bio_en = _get_person_bio_from_translations(actor_id, "en-US")
+        if bio_en:
+            data["biography"] = bio_en
+            data["_bio_fallback_lang"] = "en"
+            data["_bio_lang"] = "en-US"
+
+    return data
+
+
+def get_actor_movie_credits(actor_id: int, language: str = "ru-RU") -> dict:
+    return tmdb_get(f"person/{actor_id}/movie_credits", params={"language": language})

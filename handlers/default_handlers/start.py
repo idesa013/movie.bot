@@ -1,9 +1,69 @@
-from telebot.types import Message
+from datetime import datetime
+from telebot.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+
 from keyboards.reply.main_menu import main_menu
 from loader import bot
+from database.models import User
+from utils.i18n import t, LANG_EN, LANG_RU
+
+
+def _lang_markup() -> InlineKeyboardMarkup:
+    m = InlineKeyboardMarkup()
+    m.row(
+        InlineKeyboardButton(text="English", callback_data="set_lang:en"),
+        InlineKeyboardButton(text="Русский", callback_data="set_lang:ru"),
+    )
+    return m
+
+
+def _ensure_user_row(user_id: int, username: str | None, language: str) -> None:
+    user = User.get_or_none(User.user_id == user_id)
+    if user is None:
+        User.create(
+            user_id=user_id,
+            username=username,
+            name="",
+            surname="",
+            age=0,
+            email="",
+            phone_number="",
+            reg_date=datetime.now(),
+            language=language,
+        )
+    else:
+        changed = False
+        if username and user.username != username:
+            user.username = username
+            changed = True
+        if getattr(user, "language", None) != language:
+            user.language = language
+            changed = True
+        if changed:
+            user.save()
 
 
 @bot.message_handler(commands=["start"])
 def bot_start(message: Message):
-    bot.reply_to(message, f"Hello, {message.from_user.full_name}!")
-    bot.send_message(message.chat.id, "Выберите действие:", reply_markup=main_menu())
+    bot.send_message(
+        message.chat.id,
+        f"{t(LANG_EN, 'choose_language')} / {t(LANG_RU, 'choose_language')}",
+        reply_markup=_lang_markup(),
+    )
+
+
+@bot.callback_query_handler(func=lambda c: c.data.startswith("set_lang:"))
+def set_language(call: CallbackQuery):
+    lang = call.data.split(":", 1)[1]
+    if lang not in (LANG_EN, LANG_RU):
+        bot.answer_callback_query(call.id, "Unknown language")
+        return
+
+    _ensure_user_row(call.from_user.id, call.from_user.username, lang)
+
+    bot.edit_message_text(
+        t(lang, "language_saved"),
+        call.message.chat.id,
+        call.message.message_id,
+    )
+    bot.send_message(call.message.chat.id, t(lang, "choose_action"), reply_markup=main_menu(lang))
+    bot.answer_callback_query(call.id)

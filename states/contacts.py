@@ -2,6 +2,7 @@ from telebot.handler_backends import State, StatesGroup
 
 
 class UserInfoState(StatesGroup):
+    language = State()
     user_id = State()
     username = State()
     name = State()
