@@ -29,6 +29,13 @@ def _sorted_movies_no_docs(movies: list, limit: int = 10) -> list:
     return sorted(filtered, key=lambda m: m.get("popularity", 0), reverse=True)[:limit]
 
 
+def _actor_has_non_doc_movies(actor_id: int, tmdb_lang: str) -> bool:
+    credits = get_actor_movie_credits(actor_id, language=tmdb_lang) or {}
+    cast = credits.get("cast", []) or []
+    non_doc = [m for m in cast if 99 not in (m.get("genre_ids") or [])]
+    return len(non_doc) > 0
+
+
 def _merge_markups(
     top: InlineKeyboardMarkup, bottom: InlineKeyboardMarkup
 ) -> InlineKeyboardMarkup:
@@ -85,6 +92,13 @@ def send_actor_card(
 ):
     lang = get_user_language(user_id)
     tmdb_lang = tmdb_language(lang)
+
+    if not _actor_has_non_doc_movies(actor_id, tmdb_lang):
+        bot.send_message(
+            chat_id,
+            "Actor not found" if lang == "en" else "Актёр не найден",
+        )
+        return
 
     details = get_actor_details(actor_id, language=tmdb_lang) or {}
     credits = get_actor_movie_credits(actor_id, language=tmdb_lang) or {}

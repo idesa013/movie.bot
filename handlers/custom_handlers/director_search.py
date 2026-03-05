@@ -2,87 +2,63 @@ from telebot.types import Message
 
 from loader import bot
 from states.director import DirectorSearchState
-from states.movie import MovieSearchState
-from states.actor import ActorSearchState
-from api.tmdb_director import search_director
+from api.tmdb_director import search_director, get_director_movie_credits
 from utils.person_service import send_director_card
-from utils.i18n import get_user_language, tmdb_language, t
+from utils.i18n import get_user_language, tmdb_language, t, route_menu_or_command
 
 
-_MENU_MOVIE_EN = "🎬 Movie Search"
-_MENU_ACTOR_EN = "🎭 Search Actor"
-_MENU_DIRECTOR_EN = "🎬 Search Director"
-
-_MENU_MOVIE_RU = "🎬 Поиск фильма"
-_MENU_ACTOR_RU = "🎭 Поиск актёра"
-_MENU_DIRECTOR_RU = "🎬 Поиск режиссёра"
+def _has_directed_movies(person_id: int, tmdb_lang: str) -> bool:
+    credits = get_director_movie_credits(person_id, language=tmdb_lang) or {}
+    crew = credits.get("crew", []) or []
+    return any(x.get("job") == "Director" for x in crew)
 
 
-def _route_menu_text_in_state(message: Message, lang: str) -> bool:
-    txt = (message.text or "").strip()
-
-    if txt in (_MENU_MOVIE_EN, _MENU_MOVIE_RU):
-        bot.set_state(
-            message.from_user.id, MovieSearchState.waiting_for_title, message.chat.id
-        )
-        bot.send_message(
-            message.chat.id,
-            "Введите название фильма:" if lang == "ru" else "Enter the movie title:",
-        )
-        return True
-
-    if txt in (_MENU_ACTOR_EN, _MENU_ACTOR_RU):
-        bot.set_state(
-            message.from_user.id,
-            ActorSearchState.waiting_for_actor_name,
-            message.chat.id,
-        )
-        bot.send_message(
-            message.chat.id,
-            "Введите имя актёра:" if lang == "ru" else "Enter the actor name:",
-        )
-        return True
-
-    if txt in (_MENU_DIRECTOR_EN, _MENU_DIRECTOR_RU):
-        bot.set_state(
-            message.from_user.id,
-            DirectorSearchState.waiting_for_director_name,
-            message.chat.id,
-        )
-        bot.send_message(
-            message.chat.id,
-            "Введите имя режиссёра:" if lang == "ru" else "Enter the director name:",
-        )
-        return True
-
-    return False
-
-
-@bot.message_handler(state=DirectorSearchState.waiting_for_director_name)
+@bot.message_handler(
+    state=DirectorSearchState.waiting_for_director_name, content_types=["text"]
+)
 def process_director_search(message: Message):
-    lang = get_user_language(message.from_user.id)
-
-    if _route_menu_text_in_state(message, lang):
+    if route_menu_or_command(bot, message):
         return
+
+    user_id = message.from_user.id
+    chat_id = message.chat.id
+
+    lang = get_user_language(user_id)
+    tmdb_lang = tmdb_language(lang)
 
     query = (message.text or "").strip()
     if not query:
         return
 
-    tmdb_lang = tmdb_language(lang)
+    # защита от меню-кнопки внутри state
+    if query in ("🎬 Search Director", "🎬 Поиск режиссёра"):
+        bot.send_message(
+            chat_id,
+            "Enter director name:" if lang == "en" else "Введите имя режиссёра:",
+        )
+        return
 
     data = search_director(query, language=tmdb_lang)
     results = data.get("results") or []
     if not results:
-        bot.send_message(message.chat.id, t(lang, "director_not_found"))
+        bot.send_message(chat_id, t(lang, "director_not_found"))
         return
 
-    director_id = results[0].get("id")
+    directors = [p for p in results if p.get("known_for_department") == "Directing"]
+    directors.sort(key=lambda x: x.get("popularity", 0), reverse=True)
+
+    director_id = None
+    for p in directors[:10]:
+        pid = p.get("id")
+        if not pid:
+            continue
+        if _has_directed_movies(int(pid), tmdb_lang):
+            director_id = int(pid)
+            break
+
     if not director_id:
-        bot.send_message(message.chat.id, t(lang, "director_not_found"))
+        bot.send_message(chat_id, t(lang, "director_not_found"))
         return
 
-    send_director_card(
-        message.chat.id, message.from_user.id, int(director_id), searched_from="str"
-    )
-    bot.delete_state(message.from_user.id, message.chat.id)
+    send_director_card(chat_id, user_id, director_id, searched_from="director")
+    bot.delete_state(user_id, chat_id)
