@@ -230,11 +230,6 @@ def _user_card_markup(user, page, lang):
     movies = "🎬 Movies" if lang == "en" else "🎬 Фильмы"
     actors = "🎭 Actors" if lang == "en" else "🎭 Актеры"
     directors = "🎬 Directors" if lang == "en" else "🎬 Режиссеры"
-    block_btn = (
-        ("⛔ Block" if user.active else "✅ Unblock")
-        if lang == "en"
-        else ("⛔ Заблокировать" if user.active else "✅ Разблокировать")
-    )
     back_btn = "⬅ Back to List" if lang == "en" else "⬅ Назад к списку"
 
     markup.row(
@@ -248,11 +243,20 @@ def _user_card_markup(user, page, lang):
             directors, callback_data=f"admin_user_fav:directors:{user.user_id}:{page}"
         ),
     )
-    markup.row(
-        InlineKeyboardButton(
-            block_btn, callback_data=f"admin_user_toggle_block:{user.id}:{page}"
+
+    # кнопку блокировки не показываем для самого администратора
+    if not is_admin(user.user_id):
+        block_btn = (
+            ("⛔ Block" if user.active else "✅ Unblock")
+            if lang == "en"
+            else ("⛔ Заблокировать" if user.active else "✅ Разблокировать")
         )
-    )
+        markup.row(
+            InlineKeyboardButton(
+                block_btn, callback_data=f"admin_user_toggle_block:{user.id}:{page}"
+            )
+        )
+
     markup.row(
         InlineKeyboardButton(back_btn, callback_data=f"admin_user_back_to_list:{page}")
     )
@@ -509,6 +513,18 @@ def admin_toggle_block(call: CallbackQuery):
     if not user:
         bot.answer_callback_query(
             call.id, "User not found" if lang == "en" else "Пользователь не найден"
+        )
+        return
+
+    # дополнительная защита: админа блокировать нельзя
+    if is_admin(user.user_id):
+        bot.answer_callback_query(
+            call.id,
+            (
+                "Admin cannot be blocked"
+                if lang == "en"
+                else "Администратора нельзя заблокировать"
+            ),
         )
         return
 
