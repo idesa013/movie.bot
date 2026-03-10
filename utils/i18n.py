@@ -3,6 +3,7 @@ from __future__ import annotations
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from database.models import User
+from utils.access import ensure_user_not_blocked
 
 LANG_EN = "en"
 LANG_RU = "ru"
@@ -48,6 +49,8 @@ TEXT = {
         "en": "🎬 Favorite directors:",
         "ru": "🎬 Любимые режиссеры:",
     },
+    "fav_added": {"en": "Added: {name}", "ru": "Добавлено: {name}"},
+    "fav_removed": {"en": "Removed: {name}", "ru": "Удалено: {name}"},
 }
 
 
@@ -90,15 +93,21 @@ def registration_required_markup(lang: str) -> InlineKeyboardMarkup:
 
 
 def ensure_registered(bot, chat_id: int, user_id: int) -> bool:
+
+    if not ensure_user_not_blocked(bot, chat_id, user_id):
+        return False
+
     if is_registered(user_id):
         return True
 
     lang = get_user_language(user_id)
+
     bot.send_message(
         chat_id,
         t(lang, "need_registration"),
         reply_markup=registration_required_markup(lang),
     )
+
     return False
 
 
@@ -120,16 +129,19 @@ def route_menu_or_command(bot, message) -> bool:
 
         if cmd == "/start":
             from handlers.default_handlers.start import bot_start
+
             bot_start(message)
             return True
 
         if cmd == "/help":
             from handlers.default_handlers.help import bot_help
+
             bot_help(message)
             return True
 
         if cmd == "/registration":
             from handlers.custom_handlers.registration import registration
+
             registration(message)
             return True
 
@@ -147,6 +159,7 @@ def route_menu_or_command(bot, message) -> bool:
             except Exception:
                 pass
             from handlers.custom_handlers.movie_start import start_movie_search
+
             start_movie_search(message)
             return True
 
@@ -156,6 +169,7 @@ def route_menu_or_command(bot, message) -> bool:
             except Exception:
                 pass
             from handlers.custom_handlers.actor_search_start import start_actor_search
+
             start_actor_search(message)
             return True
 
@@ -164,35 +178,11 @@ def route_menu_or_command(bot, message) -> bool:
                 bot.delete_state(user_id, chat_id)
             except Exception:
                 pass
-            from handlers.custom_handlers.director_search_start import start_director_search
+            from handlers.custom_handlers.director_search_start import (
+                start_director_search,
+            )
+
             start_director_search(message)
-            return True
-
-        if txt == pack["recommend_genre"]:
-            try:
-                bot.delete_state(user_id, chat_id)
-            except Exception:
-                pass
-            from handlers.custom_handlers.movie_start import show_recommendations
-            show_recommendations(message)
-            return True
-
-        if txt == pack["recommend_actor"]:
-            try:
-                bot.delete_state(user_id, chat_id)
-            except Exception:
-                pass
-            from handlers.custom_handlers.movie_start import show_actor_recommendations
-            show_actor_recommendations(message)
-            return True
-
-        if txt == pack["recommend_director"]:
-            try:
-                bot.delete_state(user_id, chat_id)
-            except Exception:
-                pass
-            from handlers.custom_handlers.movie_start import show_director_recommendations
-            show_director_recommendations(message)
             return True
 
     except Exception:

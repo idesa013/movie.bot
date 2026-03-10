@@ -5,6 +5,7 @@ from states.director import DirectorSearchState
 from api.tmdb_director import search_director, get_director_movie_credits
 from utils.person_service import send_director_card
 from utils.i18n import get_user_language, tmdb_language, t, route_menu_or_command
+from utils.access import ensure_user_not_blocked
 
 
 def _has_directed_movies(person_id: int, tmdb_lang: str) -> bool:
@@ -17,6 +18,9 @@ def _has_directed_movies(person_id: int, tmdb_lang: str) -> bool:
     state=DirectorSearchState.waiting_for_director_name, content_types=["text"]
 )
 def process_director_search(message: Message):
+    if not ensure_user_not_blocked(bot, message.chat.id, message.from_user.id):
+        return
+
     if route_menu_or_command(bot, message):
         return
 

@@ -7,10 +7,14 @@ from config_data.config import DATE_FORMAT, TMBD_API_KEY
 from states.movie import MovieSearchState
 from utils.movie_service import send_movie_card
 from utils.i18n import get_user_language, tmdb_language, t, route_menu_or_command
+from utils.access import ensure_user_not_blocked
 
 
 @bot.message_handler(state=MovieSearchState.waiting_for_title)
 def search_movie(message: Message):
+    if not ensure_user_not_blocked(bot, message.chat.id, message.from_user.id):
+        return
+
     # ✅ меню/команды не считаем поисковым запросом
     if route_menu_or_command(bot, message):
         return

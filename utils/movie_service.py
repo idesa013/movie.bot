@@ -10,9 +10,10 @@ from api.tmdb_movie import get_movie_details, get_movie_credits
 from database.favorites import check_favorite
 from database.logs import log_movie_search
 from keyboards.inline.add_to_fav import add_favorites_button
+from utils.admin_context import has_selected_user, get_selected_user, get_selected_page
 
 
-CAPTION_LIMIT = 1024  # Telegram caption limit for send_photo
+CAPTION_LIMIT = 1024
 
 
 def _chunked(items, size: int):
@@ -20,12 +21,9 @@ def _chunked(items, size: int):
         yield items[i : i + size]
 
 
-def _build_movie_markup(
-    user_id: int, movie_id: int, credits: dict
-) -> InlineKeyboardMarkup:
+def _build_movie_markup(user_id: int, movie_id: int, credits: dict, viewer_id: int | None = None) -> InlineKeyboardMarkup:
     markup = InlineKeyboardMarkup()
 
-    # 1) Режиссёры — до 3 кнопок в ряд
     directors = []
     seen_dir = set()
     for c in credits.get("crew", []) or []:
@@ -33,105 +31,67 @@ def _build_movie_markup(
             continue
         dir_id = c.get("id")
         name = c.get("name")
-        if dir_id is None or not name:
-            continue
-        if dir_id in seen_dir:
+        if dir_id is None or not name or dir_id in seen_dir:
             continue
         seen_dir.add(dir_id)
         directors.append((dir_id, name))
 
-    director_buttons = [
-        InlineKeyboardButton(text=name, callback_data=f"director_{dir_id}")
-        for dir_id, name in directors
-    ]
+    director_buttons = [InlineKeyboardButton(text=name, callback_data=f"director_{dir_id}") for dir_id, name in directors]
     for row in _chunked(director_buttons, 3):
         markup.row(*row)
 
-    # 2) Актёры — до 3 кнопок в ряд + style="primary"
     actors = []
     seen_act = set()
     for a in (credits.get("cast", []) or [])[:15]:
         act_id = a.get("id")
         name = a.get("name")
-        if act_id is None or not name:
-            continue
-        if act_id in seen_act:
+        if act_id is None or not name or act_id in seen_act:
             continue
         seen_act.add(act_id)
         actors.append((act_id, name))
 
-    actor_buttons = [
-        InlineKeyboardButton(
-            text=name, callback_data=f"actor_{act_id}", style="primary"
-        )
-        for act_id, name in actors
-    ]
+    actor_buttons = [InlineKeyboardButton(text=name, callback_data=f"actor_{act_id}", style="primary") for act_id, name in actors]
     for row in _chunked(actor_buttons, 3):
         markup.row(*row)
 
-    # 3) Избранное — последней строкой
     in_favorites = check_favorite(user_id, movie_id)
     fav_markup = add_favorites_button(movie_id, in_favorites=in_favorites)
     for row in fav_markup.keyboard:
         markup.row(*row)
 
+    if viewer_id is not None and has_selected_user(viewer_id):
+        markup.row(InlineKeyboardButton(text="⬅ Back to User", callback_data=f"admin_user_back_to_card:{get_selected_user(viewer_id)}:{get_selected_page(viewer_id)}"))
+
     return markup
 
 
-def _send_photo_or_fallback(
-    chat_id: int, poster_url: str, text: str, markup: InlineKeyboardMarkup
-):
-    """
-    Если caption слишком длинный — Telegram вернёт 400 (caption is too long).
-    Тогда отправляем:
-      1) фото без caption
-      2) отдельное сообщение с текстом + кнопками
-    """
+def _send_photo_or_fallback(chat_id: int, poster_url: str, text: str, markup: InlineKeyboardMarkup):
     if len(text) <= CAPTION_LIMIT:
-        bot.send_photo(
-            chat_id, poster_url, caption=text, parse_mode="HTML", reply_markup=markup
-        )
+        bot.send_photo(chat_id, poster_url, caption=text, parse_mode="HTML", reply_markup=markup)
         return
 
     bot.send_photo(chat_id, poster_url)
     bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
 
 
-def send_movie_card(
-    chat_id: int,
-    movie_id: int,
-    user_id: int,
-    searched_from: str = "str",
-    search_time: str | None = None,
-):
+def send_movie_card(chat_id: int, movie_id: int, user_id: int, searched_from: str = "str", search_time: str | None = None, viewer_id: int | None = None):
     details = get_movie_details(movie_id) or {}
     credits = get_movie_credits(movie_id) or {}
 
     if not search_time:
         search_time = datetime.now().strftime(DATE_FORMAT)
 
-    # жанры + ids для логов
     genres = details.get("genres", []) or []
-    genres_text = (
-        ", ".join(escape(g.get("name", "")) for g in genres if g.get("name")) or "n/a"
-    )
-    genre_ids_str = (
-        " ".join(str(g["id"]) for g in genres if g.get("id") is not None)
-        if genres
-        else ""
-    )
+    genres_text = ", ".join(escape(g.get("name", "")) for g in genres if g.get("name")) or "n/a"
+    genre_ids_str = " ".join(str(g["id"]) for g in genres if g.get("id") is not None) if genres else ""
 
-    # логирование
-    log_movie_search(
-        user_id, movie_id, search_time, genre_ids_str, searched_from=searched_from
-    )
+    log_movie_search(user_id, movie_id, search_time, genre_ids_str, searched_from=searched_from)
 
     title = escape(details.get("title", ""))
     original = escape(details.get("original_title", ""))
     release_date = escape(details.get("release_date", "n/a"))
     rating = details.get("vote_average", "n/a")
 
-    # описание
     overview_raw = details.get("overview") or "No description available"
     overview = escape(overview_raw)
 
@@ -146,7 +106,7 @@ def send_movie_card(
         f"🎬 <b>Режиссёры:</b> / <code>👥 <b>Актёры:</b></code>"
     )
 
-    markup = _build_movie_markup(user_id=user_id, movie_id=movie_id, credits=credits)
+    markup = _build_movie_markup(user_id=user_id, movie_id=movie_id, credits=credits, viewer_id=viewer_id)
 
     if details.get("poster_path"):
         poster = "https://image.tmdb.org/t/p/w500" + details["poster_path"]

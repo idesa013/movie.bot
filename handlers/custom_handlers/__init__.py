@@ -18,3 +18,4 @@ from . import movie_open
 from . import menu_navigation
 from . import favorites_view
 from . import admin_panel
+from . import blocked_support

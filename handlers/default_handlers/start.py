@@ -1,7 +1,6 @@
 from datetime import datetime
 from telebot.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
-# from keyboards.reply.main_menu import main_menu
 from keyboards.reply.admin_menu import get_main_menu
 from loader import bot
 from database.models import User
@@ -30,6 +29,7 @@ def _ensure_user_row(user_id: int, username: str | None, language: str) -> None:
             phone_number="",
             reg_date=datetime.now(),
             language=language,
+            active=True,
         )
     else:
         changed = False
@@ -39,13 +39,15 @@ def _ensure_user_row(user_id: int, username: str | None, language: str) -> None:
         if getattr(user, "language", None) != language:
             user.language = language
             changed = True
+        if getattr(user, "active", None) is None:
+            user.active = True
+            changed = True
         if changed:
             user.save()
 
 
 @bot.message_handler(commands=["start"])
 def bot_start(message: Message):
-    # На первом обращении даём выбрать язык
     bot.send_message(
         message.chat.id,
         f"{t(LANG_EN, 'choose_language')} / {t(LANG_RU, 'choose_language')}",
@@ -68,7 +70,6 @@ def set_language(call: CallbackQuery):
         call.message.message_id,
     )
 
-    # ✅ ГЕЙТ: без регистрации дальше не пускаем
     if not ensure_registered(bot, call.message.chat.id, call.from_user.id):
         bot.answer_callback_query(call.id)
         return

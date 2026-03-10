@@ -20,3 +20,4 @@ class User(BaseModel):
     phone_number = CharField()
     reg_date = DateTimeField(default=datetime.now)
     language = CharField(default='en')
+    active = BooleanField(default=True)

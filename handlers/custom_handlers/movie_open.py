@@ -1,6 +1,7 @@
 from loader import bot
 from utils.movie_service import send_movie_card
 from utils.i18n import ensure_registered
+from utils.admin_context import resolve_effective_user_id
 
 
 @bot.callback_query_handler(func=lambda c: c.data.startswith("movie_recom:"))
@@ -10,12 +11,14 @@ def movie_recom_callback(call):
         return
 
     movie_id = int(call.data.split(":")[1])
+    effective_user_id = resolve_effective_user_id(call.from_user.id)
 
     send_movie_card(
         call.message.chat.id,
         movie_id,
-        call.from_user.id,
+        effective_user_id,
         searched_from="movie_recom",
+        viewer_id=call.from_user.id,
     )
     bot.answer_callback_query(call.id)
 
@@ -28,6 +31,7 @@ def movie_callback(call):
 
     parts = call.data.split("_")
     movie_id = int(parts[1])
+    effective_user_id = resolve_effective_user_id(call.from_user.id)
 
     searched_from = "movie"
     if len(parts) >= 3:
@@ -47,7 +51,8 @@ def movie_callback(call):
     send_movie_card(
         call.message.chat.id,
         movie_id,
-        call.from_user.id,
+        effective_user_id,
         searched_from=searched_from,
+        viewer_id=call.from_user.id,
     )
     bot.answer_callback_query(call.id)

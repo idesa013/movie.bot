@@ -20,14 +20,18 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    # ---- migrate user.language ----
     if _table_exists(cur, "user") and not _column_exists(cur, "user", "language"):
         try:
             cur.execute("ALTER TABLE user ADD COLUMN language TEXT DEFAULT 'en'")
         except sqlite3.OperationalError:
             pass
 
-    # ---- favorites tables ----
+    if _table_exists(cur, "user") and not _column_exists(cur, "user", "active"):
+        try:
+            cur.execute("ALTER TABLE user ADD COLUMN active INTEGER DEFAULT 1")
+        except sqlite3.OperationalError:
+            pass
+
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS favorites (
@@ -59,14 +63,12 @@ def init_db():
         """
     )
 
-    # ---- rename search_log -> movie_search_log ----
     if _table_exists(cur, "search_log") and not _table_exists(cur, "movie_search_log"):
         try:
             cur.execute("ALTER TABLE search_log RENAME TO movie_search_log")
         except sqlite3.OperationalError:
             pass
 
-    # ---- ensure movie_search_log exists ----
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS movie_search_log (
@@ -87,7 +89,6 @@ def init_db():
         except sqlite3.OperationalError:
             pass
 
-    # migrate searched_from values
     cur.execute(
         """
         UPDATE movie_search_log
@@ -104,7 +105,6 @@ def init_db():
         """
     )
 
-    # ---- actor search log ----
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS actor_search_log (
@@ -123,7 +123,6 @@ def init_db():
         except sqlite3.OperationalError:
             pass
 
-    # ---- director search log ----
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS director_search_log (
@@ -141,6 +140,45 @@ def init_db():
             )
         except sqlite3.OperationalError:
             pass
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS msg_from_user (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            username TEXT,
+            user_msg TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+    if _table_exists(cur, "msg_from_user") and not _column_exists(
+        cur, "msg_from_user", "created_at"
+    ):
+        try:
+            cur.execute("ALTER TABLE msg_from_user ADD COLUMN created_at TEXT")
+            cur.execute(
+                """
+                UPDATE msg_from_user
+                SET created_at = CURRENT_TIMESTAMP
+                WHERE created_at IS NULL OR created_at = ''
+                """
+            )
+        except sqlite3.OperationalError:
+            pass
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS user_block_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            admin_id INTEGER NOT NULL,
+            action TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
 
     conn.commit()
     conn.close()

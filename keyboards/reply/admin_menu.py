@@ -8,16 +8,18 @@ _TEXT = {
     "en": {
         "admin_panel": "🛠 Admin Panel",
         "users": "👥 Users",
-        "back": "⬅ Back",
-        "admin_choose": "Choose an action:",
-        "users_title": "👥 Users",
+        "messages": "✉ Messages",
+        "search_user": "🔎 Find User",
+        "search_blocked": "⛔🔎 Find Blocked",
+        "back_to_menu": "⬅ Back to Menu",
     },
     "ru": {
         "admin_panel": "🛠 Админ панель",
         "users": "👥 Пользователи",
-        "back": "⬅ Назад",
-        "admin_choose": "Выберите действие:",
-        "users_title": "👥 Пользователи",
+        "messages": "✉ Сообщения",
+        "search_user": "🔎 Найти пользователя",
+        "search_blocked": "⛔🔎 Найти заблокированного",
+        "back_to_menu": "⬅ Назад в меню",
     },
 }
 
@@ -27,10 +29,6 @@ def is_admin(user_id: int) -> bool:
 
 
 def admin_main_menu(lang: str = "en"):
-    """
-    Главное меню для администратора:
-    стандартное меню + кнопка входа в админку.
-    """
     lang = lang if lang in MAIN_TEXT else "en"
 
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -43,25 +41,28 @@ def admin_main_menu(lang: str = "en"):
         KeyboardButton(MAIN_TEXT[lang]["favorites"]),
         KeyboardButton(MAIN_TEXT[lang]["recommendations"]),
     )
-    kb.row(
-        KeyboardButton(_TEXT[lang]["admin_panel"]),
-    )
+    kb.row(KeyboardButton(_TEXT[lang]["admin_panel"]))
     return kb
 
 
 def get_main_menu(user_id: int, lang: str = "en"):
-    """
-    Возвращает обычное меню или меню администратора.
-    """
-    if is_admin(user_id):
-        return admin_main_menu(lang)
-    return main_menu(lang)
+    return admin_main_menu(lang) if is_admin(user_id) else main_menu(lang)
 
 
 def admin_panel_menu(lang: str = "en"):
     lang = lang if lang in _TEXT else "en"
 
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.row(KeyboardButton(_TEXT[lang]["users"]))
-    kb.row(KeyboardButton(_TEXT[lang]["back"]))
+
+    kb.row(
+        KeyboardButton(_TEXT[lang]["users"]),
+        KeyboardButton(_TEXT[lang]["messages"]),
+        KeyboardButton(_TEXT[lang]["back_to_menu"]),
+    )
+
+    kb.row(
+        KeyboardButton(_TEXT[lang]["search_user"]),
+        KeyboardButton(_TEXT[lang]["search_blocked"]),
+    )
+
     return kb

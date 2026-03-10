@@ -5,6 +5,7 @@ from states.actor import ActorSearchState
 from api.tmdb_actor import search_actor, get_actor_movie_credits
 from utils.person_service import send_actor_card
 from utils.i18n import get_user_language, tmdb_language, t, route_menu_or_command
+from utils.access import ensure_user_not_blocked
 
 
 def _has_actor_movies(actor_id: int, tmdb_lang: str) -> bool:
@@ -17,6 +18,8 @@ def _has_actor_movies(actor_id: int, tmdb_lang: str) -> bool:
     state=ActorSearchState.waiting_for_actor_name, content_types=["text"]
 )
 def process_actor_search(message: Message):
+    if not ensure_user_not_blocked(bot, message.chat.id, message.from_user.id):
+        return
 
     if route_menu_or_command(bot, message):
         return
