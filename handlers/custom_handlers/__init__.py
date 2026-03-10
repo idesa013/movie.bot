@@ -14,3 +14,7 @@ from . import director_open
 from . import director_favorites
 
 from . import movie_open
+
+from . import menu_navigation
+from . import favorites_view
+from . import admin_panel

@@ -1,10 +1,11 @@
 from datetime import datetime
 from telebot.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
-from keyboards.reply.main_menu import main_menu
+# from keyboards.reply.main_menu import main_menu
+from keyboards.reply.admin_menu import get_main_menu
 from loader import bot
 from database.models import User
-from utils.i18n import t, LANG_EN, LANG_RU
+from utils.i18n import t, LANG_EN, LANG_RU, ensure_registered
 
 
 def _lang_markup() -> InlineKeyboardMarkup:
@@ -44,6 +45,7 @@ def _ensure_user_row(user_id: int, username: str | None, language: str) -> None:
 
 @bot.message_handler(commands=["start"])
 def bot_start(message: Message):
+    # На первом обращении даём выбрать язык
     bot.send_message(
         message.chat.id,
         f"{t(LANG_EN, 'choose_language')} / {t(LANG_RU, 'choose_language')}",
@@ -65,5 +67,15 @@ def set_language(call: CallbackQuery):
         call.message.chat.id,
         call.message.message_id,
     )
-    bot.send_message(call.message.chat.id, t(lang, "choose_action"), reply_markup=main_menu(lang))
+
+    # ✅ ГЕЙТ: без регистрации дальше не пускаем
+    if not ensure_registered(bot, call.message.chat.id, call.from_user.id):
+        bot.answer_callback_query(call.id)
+        return
+
+    bot.send_message(
+        call.message.chat.id,
+        t(lang, "choose_action"),
+        reply_markup=get_main_menu(call.from_user.id, lang),
+    )
     bot.answer_callback_query(call.id)

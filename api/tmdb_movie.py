@@ -34,3 +34,40 @@ def search_movie(query: str, language: str | None = None) -> dict:
     if language:
         params["language"] = language
     return tmdb_get("search/movie", params=params)
+
+
+def discover_movies_by_genre(
+    genre_id: int,
+    language: str | None = None,
+    page: int = 1,
+    sort_by: str = "popularity.desc",
+    vote_average_gte: float = 4,
+) -> dict:
+    params = {
+        "sort_by": sort_by,
+        "with_genres": str(genre_id),
+        "include_adult": "false",
+        "include_video": "false",
+        "vote_average.gte": str(vote_average_gte),
+        "page": page,
+    }
+    if language:
+        params["language"] = language
+    return tmdb_get("discover/movie", params=params)
+
+
+def discover_new_movies(
+    language: str | None = None,
+    page: int = 1,
+    vote_average_gte: float = 4,
+) -> dict:
+    params = {
+        "sort_by": "primary_release_date.desc",
+        "include_adult": "false",
+        "include_video": "false",
+        "vote_average.gte": str(vote_average_gte),
+        "page": page,
+    }
+    if language:
+        params["language"] = language
+    return tmdb_get("discover/movie", params=params)

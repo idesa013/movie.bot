@@ -22,6 +22,10 @@ def _has_non_doc_actor_movies(actor_id: int, tmdb_lang: str) -> bool:
     state=ActorSearchState.waiting_for_actor_name, content_types=["text"]
 )
 def process_actor_search(message: Message):
+    from utils.i18n import ensure_registered
+    if not ensure_registered(bot, message.chat.id, message.from_user.id):
+        return
+
     if route_menu_or_command(bot, message):
         return
 
