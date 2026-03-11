@@ -6,22 +6,24 @@ from telebot.types import (
     InlineKeyboardButton,
 )
 
-
 from loader import bot
 from database.models import User
-from states.admin_search import AdminSearchState
 from database.block_log import add_block_log, get_last_block_time
 from database.user_messages import get_user_messages_from_date, get_all_user_messages
+from database.bot_config import get_config_int
 from keyboards.reply.admin_menu import _TEXT, is_admin, get_main_menu, admin_panel_menu
 from utils.i18n import get_user_language
 from utils.admin_context import set_selected_user
 from handlers.custom_handlers.favorites_view import send_favorites_list
+from states.admin_search import AdminSearchState
 
-
-USERS_PER_PAGE = 3
 
 ADMIN_PAGES = {}
 ADMIN_MODE = {}  # users / messages
+
+
+def _users_per_page() -> int:
+    return get_config_int("user_per_admin_page", 3)
 
 
 def _deny_if_not_admin(obj) -> bool:
@@ -60,28 +62,30 @@ def _users_pagination_markup(page, total_pages):
 
 
 def _get_users_page(page: int):
+    per_page = _users_per_page()
     query = User.select().order_by(User.id.asc())
     total = query.count()
 
     if total == 0:
         return [], 0, 0
 
-    total_pages = math.ceil(total / USERS_PER_PAGE)
+    total_pages = math.ceil(total / per_page)
     page = max(1, min(page, total_pages))
-    users = list(query.paginate(page, USERS_PER_PAGE))
+    users = list(query.paginate(page, per_page))
     return users, total, total_pages
 
 
 def _get_blocked_users_page(page: int):
+    per_page = _users_per_page()
     query = User.select().where(User.active == False).order_by(User.id.asc())
     total = query.count()
 
     if total == 0:
         return [], 0, 0
 
-    total_pages = math.ceil(total / USERS_PER_PAGE)
+    total_pages = math.ceil(total / per_page)
     page = max(1, min(page, total_pages))
-    users = list(query.paginate(page, USERS_PER_PAGE))
+    users = list(query.paginate(page, per_page))
     return users, total, total_pages
 
 
@@ -244,7 +248,6 @@ def _user_card_markup(user, page, lang):
         ),
     )
 
-    # кнопку блокировки не показываем для самого администратора
     if not is_admin(user.user_id):
         block_btn = (
             ("⛔ Block" if user.active else "✅ Unblock")
@@ -293,9 +296,6 @@ def _format_user_messages(user, lang: str):
     last_block_time = get_last_block_time(user.user_id)
     messages = get_user_messages_from_date(user.user_id, last_block_time)
 
-    # fallback: если после последней блокировки ничего нет,
-    # всё равно покажем последние сообщения пользователя,
-    # чтобы было понятно, что таблица работает
     fallback_used = False
     if not messages:
         messages = get_all_user_messages(user.user_id)
@@ -380,6 +380,118 @@ def open_blocked_messages_users(message: Message):
 
     set_selected_user(message.from_user.id, None)
     _show_blocked_users_page(message.chat.id, message.from_user.id, 1)
+
+
+@bot.message_handler(
+    func=lambda m: (m.text or "").strip()
+    in (_TEXT["en"]["search_user"], _TEXT["ru"]["search_user"])
+)
+def admin_search_user(message: Message):
+    if _deny_if_not_admin(message):
+        return
+
+    lang = get_user_language(message.from_user.id)
+    bot.set_state(
+        message.from_user.id, AdminSearchState.waiting_username, message.chat.id
+    )
+    bot.send_message(
+        message.chat.id,
+        "Введите username пользователя" if lang == "ru" else "Enter username",
+    )
+
+
+@bot.message_handler(
+    func=lambda m: (m.text or "").strip()
+    in (_TEXT["en"]["search_blocked"], _TEXT["ru"]["search_blocked"])
+)
+def admin_search_blocked_user(message: Message):
+    if _deny_if_not_admin(message):
+        return
+
+    lang = get_user_language(message.from_user.id)
+    bot.set_state(
+        message.from_user.id, AdminSearchState.waiting_blocked_username, message.chat.id
+    )
+    bot.send_message(
+        message.chat.id,
+        (
+            "Введите username заблокированного пользователя"
+            if lang == "ru"
+            else "Enter blocked username"
+        ),
+    )
+
+
+@bot.message_handler(state=AdminSearchState.waiting_username)
+def admin_find_user(message: Message):
+    if _deny_if_not_admin(message):
+        return
+
+    lang = get_user_language(message.from_user.id)
+    username = (message.text or "").strip().replace("@", "")
+
+    if not username:
+        bot.send_message(
+            message.chat.id,
+            (
+                "Введите username ещё раз или нажмите 'Назад в меню'."
+                if lang == "ru"
+                else "Enter username again or press 'Back to Menu'."
+            ),
+        )
+        return
+
+    user = User.get_or_none(User.username == username)
+
+    if not user:
+        bot.send_message(
+            message.chat.id,
+            (
+                "Пользователь не найден. Попробуйте ещё раз или нажмите 'Назад в меню'."
+                if lang == "ru"
+                else "User not found. Try again or press 'Back to Menu'."
+            ),
+        )
+        return
+
+    bot.delete_state(message.from_user.id, message.chat.id)
+    _send_user_card(message.chat.id, message.from_user.id, user.id, 1)
+
+
+@bot.message_handler(state=AdminSearchState.waiting_blocked_username)
+def admin_find_blocked_user(message: Message):
+    if _deny_if_not_admin(message):
+        return
+
+    lang = get_user_language(message.from_user.id)
+    username = (message.text or "").strip().replace("@", "")
+
+    if not username:
+        bot.send_message(
+            message.chat.id,
+            (
+                "Введите username ещё раз или нажмите 'Назад в меню'."
+                if lang == "ru"
+                else "Enter username again or press 'Back to Menu'."
+            ),
+        )
+        return
+
+    user = User.get_or_none((User.username == username) & (User.active == False))
+
+    if not user:
+        bot.send_message(
+            message.chat.id,
+            (
+                "Заблокированный пользователь не найден. Попробуйте ещё раз или нажмите 'Назад в меню'."
+                if lang == "ru"
+                else "Blocked user not found. Try again or press 'Back to Menu'."
+            ),
+        )
+        return
+
+    bot.delete_state(message.from_user.id, message.chat.id)
+    _send_user_card(message.chat.id, message.from_user.id, user.id, 1)
 
 
 @bot.callback_query_handler(func=lambda c: c.data.startswith("admin_users_page:"))
@@ -516,7 +628,6 @@ def admin_toggle_block(call: CallbackQuery):
         )
         return
 
-    # дополнительная защита: админа блокировать нельзя
     if is_admin(user.user_id):
         bot.answer_callback_query(
             call.id,
@@ -588,176 +699,4 @@ def admin_back_to_main_menu(message: Message):
         message.chat.id,
         "Выберите действие:" if lang == "ru" else "Choose an action:",
         reply_markup=get_main_menu(message.from_user.id, lang),
-    )
-
-
-@bot.message_handler(
-    func=lambda m: (m.text or "").strip()
-    in (_TEXT["en"]["search_user"], _TEXT["ru"]["search_user"])
-)
-def admin_search_user(message: Message):
-
-    if _deny_if_not_admin(message):
-        return
-
-    lang = get_user_language(message.from_user.id)
-
-    bot.set_state(
-        message.from_user.id, AdminSearchState.waiting_username, message.chat.id
-    )
-
-    bot.send_message(
-        message.chat.id,
-        "Введите username пользователя" if lang == "ru" else "Enter username",
-    )
-
-
-@bot.message_handler(
-    func=lambda m: (m.text or "").strip()
-    in (_TEXT["en"]["search_blocked"], _TEXT["ru"]["search_blocked"])
-)
-def admin_search_blocked_user(message: Message):
-
-    if _deny_if_not_admin(message):
-        return
-
-    lang = get_user_language(message.from_user.id)
-
-    bot.set_state(
-        message.from_user.id, AdminSearchState.waiting_blocked_username, message.chat.id
-    )
-
-    bot.send_message(
-        message.chat.id,
-        (
-            "Введите username заблокированного пользователя"
-            if lang == "ru"
-            else "Enter blocked username"
-        ),
-    )
-
-
-@bot.message_handler(state=AdminSearchState.waiting_username)
-def admin_find_user(message: Message):
-    if _deny_if_not_admin(message):
-        return
-
-    lang = get_user_language(message.from_user.id)
-    username = (message.text or "").strip().replace("@", "")
-
-    if not username:
-        bot.send_message(
-            message.chat.id,
-            (
-                "Введите username ещё раз или нажмите 'Назад в меню'."
-                if lang == "ru"
-                else "Enter username again or press 'Back to Menu'."
-            ),
-        )
-        return
-
-    user = User.get_or_none(User.username == username)
-
-    if not user:
-        bot.send_message(
-            message.chat.id,
-            (
-                "Пользователь не найден. Попробуйте ещё раз или нажмите 'Назад в меню'."
-                if lang == "ru"
-                else "User not found. Try again or press 'Back to Menu'."
-            ),
-        )
-        return
-
-    bot.delete_state(message.from_user.id, message.chat.id)
-
-    _send_user_card(
-        message.chat.id,
-        message.from_user.id,
-        user.id,
-        1,
-    )
-
-
-@bot.message_handler(state=AdminSearchState.waiting_username)
-def admin_find_user(message: Message):
-    if _deny_if_not_admin(message):
-        return
-
-    lang = get_user_language(message.from_user.id)
-    username = (message.text or "").strip().replace("@", "")
-
-    if not username:
-        bot.send_message(
-            message.chat.id,
-            (
-                "Введите username ещё раз или нажмите 'Назад в меню'."
-                if lang == "ru"
-                else "Enter username again or press 'Back to Menu'."
-            ),
-        )
-        return
-
-    user = User.get_or_none(User.username == username)
-
-    if not user:
-        bot.send_message(
-            message.chat.id,
-            (
-                "Пользователь не найден. Попробуйте ещё раз или нажмите 'Назад в меню'."
-                if lang == "ru"
-                else "User not found. Try again or press 'Back to Menu'."
-            ),
-        )
-        return
-
-    bot.delete_state(message.from_user.id, message.chat.id)
-
-    _send_user_card(
-        message.chat.id,
-        message.from_user.id,
-        user.id,
-        1,
-    )
-
-
-@bot.message_handler(state=AdminSearchState.waiting_blocked_username)
-def admin_find_blocked_user(message: Message):
-    if _deny_if_not_admin(message):
-        return
-
-    lang = get_user_language(message.from_user.id)
-    username = (message.text or "").strip().replace("@", "")
-
-    if not username:
-        bot.send_message(
-            message.chat.id,
-            (
-                "Введите username ещё раз или нажмите 'Назад в меню'."
-                if lang == "ru"
-                else "Enter username again or press 'Back to Menu'."
-            ),
-        )
-        return
-
-    user = User.get_or_none((User.username == username) & (User.active == False))
-
-    if not user:
-        bot.send_message(
-            message.chat.id,
-            (
-                "Заблокированный пользователь не найден. Попробуйте ещё раз или нажмите 'Назад в меню'."
-                if lang == "ru"
-                else "Blocked user not found. Try again or press 'Back to Menu'."
-            ),
-        )
-        return
-
-    bot.delete_state(message.from_user.id, message.chat.id)
-
-    _send_user_card(
-        message.chat.id,
-        message.from_user.id,
-        user.id,
-        1,
     )

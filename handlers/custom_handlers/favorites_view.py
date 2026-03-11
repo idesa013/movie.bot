@@ -3,6 +3,7 @@ from telebot.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
 from loader import bot
 from database.db import DB_PATH
+from database.bot_config import get_config_int
 from api.tmdb_movie import get_movie_details
 from api.tmdb_actor import get_actor_details
 from api.tmdb_director import get_director_details
@@ -24,6 +25,16 @@ def _title_units(title: str) -> int:
     if ln <= 24:
         return 2
     return 3
+
+
+def _fav_limit(fav_type: str) -> int:
+    mapping = {
+        "movies": ("qty_movie_fav", 30),
+        "actors": ("qty_actor_fav", 20),
+        "directors": ("qty_director_fav", 10),
+    }
+    param_name, default = mapping[fav_type]
+    return get_config_int(param_name, default)
 
 
 def _build_markup(
@@ -143,36 +154,51 @@ def send_favorites_list(
     chat_id: int, viewer_id: int, target_user_id: int, fav_type: str, edit_message=None
 ):
     lang = get_user_language(target_user_id)
+    limit = _fav_limit(fav_type)
 
     if fav_type == "movies":
         items = _load_items_for_fav_type(target_user_id, "movies", lang)
-        title_text = "🎬 Favorite movies:" if lang == "en" else "🎬 Избранные фильмы:"
+        title_text = (
+            f"🎬 Favorite movies ({len(items)} of {limit}):"
+            if lang == "en"
+            else f"🎬 Избранные фильмы ({len(items)} из {limit}):"
+        )
         callback_builder = lambda movie_id: f"movie_{movie_id}_movie"
 
     elif fav_type == "actors":
         items = _load_items_for_fav_type(target_user_id, "actors", lang)
-        title_text = "🎭 Favorite actors:" if lang == "en" else "🎭 Избранные актеры:"
+        title_text = (
+            f"🎭 Favorite actors ({len(items)} of {limit}):"
+            if lang == "en"
+            else f"🎭 Избранные актеры ({len(items)} из {limit}):"
+        )
         callback_builder = lambda actor_id: f"actor_{actor_id}"
 
     else:
         items = _load_items_for_fav_type(target_user_id, "directors", lang)
         title_text = (
-            "🎬 Favorite directors:" if lang == "en" else "🎬 Избранные режиссеры:"
+            f"🎬 Favorite directors ({len(items)} of {limit}):"
+            if lang == "en"
+            else f"🎬 Избранные режиссеры ({len(items)} из {limit}):"
         )
         callback_builder = lambda director_id: f"director_{director_id}"
 
     if not items:
         empty_text = {
             "movies": (
-                "No favorite movies yet." if lang == "en" else "Избранных фильмов нет."
+                f"🎬 Избранные фильмы (0 из {limit}):"
+                if lang == "ru"
+                else f"🎬 Favorite movies (0 of {limit}):"
             ),
             "actors": (
-                "No favorite actors yet." if lang == "en" else "Избранных актеров нет."
+                f"🎭 Избранные актеры (0 из {limit}):"
+                if lang == "ru"
+                else f"🎭 Favorite actors (0 of {limit}):"
             ),
             "directors": (
-                "No favorite directors yet."
-                if lang == "en"
-                else "Избранных режиссеров нет."
+                f"🎬 Избранные режиссеры (0 из {limit}):"
+                if lang == "ru"
+                else f"🎬 Favorite directors (0 of {limit}):"
             ),
         }[fav_type]
 

@@ -1,6 +1,7 @@
 from .models import db, User
 import sqlite3
 from database.db import DB_PATH
+from database.bot_config import ensure_default_bot_config
 
 
 def _table_exists(cur: sqlite3.Cursor, name: str) -> bool:
@@ -148,7 +149,7 @@ def init_db():
             user_id INTEGER NOT NULL,
             username TEXT,
             user_msg TEXT NOT NULL,
-            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
         """
     )
@@ -157,16 +158,22 @@ def init_db():
         cur, "msg_from_user", "created_at"
     ):
         try:
-            cur.execute("ALTER TABLE msg_from_user ADD COLUMN created_at TEXT")
             cur.execute(
-                """
-                UPDATE msg_from_user
-                SET created_at = CURRENT_TIMESTAMP
-                WHERE created_at IS NULL OR created_at = ''
-                """
+                "ALTER TABLE msg_from_user ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP"
             )
         except sqlite3.OperationalError:
             pass
+
+    try:
+        cur.execute(
+            """
+            UPDATE msg_from_user
+            SET created_at = CURRENT_TIMESTAMP
+            WHERE created_at IS NULL OR TRIM(created_at) = ''
+            """
+        )
+    except sqlite3.OperationalError:
+        pass
 
     cur.execute(
         """
@@ -175,10 +182,12 @@ def init_db():
             user_id INTEGER NOT NULL,
             admin_id INTEGER NOT NULL,
             action TEXT NOT NULL,
-            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
         """
     )
 
     conn.commit()
     conn.close()
+
+    ensure_default_bot_config()
