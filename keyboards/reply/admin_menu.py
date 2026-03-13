@@ -1,6 +1,6 @@
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
-from config_data.config import ADMIN_ID
+from config_data.config import ADMIN_IDS
 from keyboards.reply.main_menu import main_menu, _TEXT as MAIN_TEXT
 
 
@@ -25,7 +25,7 @@ _TEXT = {
 
 
 def is_admin(user_id: int) -> bool:
-    return user_id == ADMIN_ID
+    return user_id in ADMIN_IDS
 
 
 def admin_main_menu(lang: str = "en"):
@@ -53,16 +53,13 @@ def admin_panel_menu(lang: str = "en"):
     lang = lang if lang in _TEXT else "en"
 
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
-
     kb.row(
         KeyboardButton(_TEXT[lang]["users"]),
         KeyboardButton(_TEXT[lang]["messages"]),
         KeyboardButton(_TEXT[lang]["back_to_menu"]),
     )
-
     kb.row(
         KeyboardButton(_TEXT[lang]["search_user"]),
         KeyboardButton(_TEXT[lang]["search_blocked"]),
     )
-
     return kb
