@@ -346,6 +346,11 @@ def open_admin_panel(message: Message):
     if _deny_if_not_admin(message):
         return
 
+    try:
+        bot.delete_state(message.from_user.id, message.chat.id)
+    except Exception:
+        pass
+
     set_selected_user(message.from_user.id, None)
     ADMIN_MODE[message.from_user.id] = "users"
     ADMIN_PAGES[message.from_user.id] = 1
@@ -366,6 +371,11 @@ def show_users_list(message: Message):
     if _deny_if_not_admin(message):
         return
 
+    try:
+        bot.delete_state(message.from_user.id, message.chat.id)
+    except Exception:
+        pass
+
     set_selected_user(message.from_user.id, None)
     _show_users_page(message.chat.id, message.from_user.id, 1)
 
@@ -377,6 +387,11 @@ def show_users_list(message: Message):
 def open_blocked_messages_users(message: Message):
     if _deny_if_not_admin(message):
         return
+
+    try:
+        bot.delete_state(message.from_user.id, message.chat.id)
+    except Exception:
+        pass
 
     set_selected_user(message.from_user.id, None)
     _show_blocked_users_page(message.chat.id, message.from_user.id, 1)
