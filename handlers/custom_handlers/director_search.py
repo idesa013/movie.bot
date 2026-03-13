@@ -26,33 +26,25 @@ def process_director_search(message: Message):
 
     user_id = message.from_user.id
     chat_id = message.chat.id
-
     lang = get_user_language(user_id)
     tmdb_lang = tmdb_language(lang)
 
     query = (message.text or "").strip()
     if not query:
-        return
-
-    # защита от меню-кнопки внутри state
-    if query in ("🎬 Search Director", "🎬 Поиск режиссёра"):
-        bot.send_message(
-            chat_id,
-            "Enter director name:" if lang == "en" else "Введите имя режиссёра:",
-        )
+        bot.send_message(chat_id, t(lang, "enter_director_name"))
         return
 
     data = search_director(query, language=tmdb_lang)
     results = data.get("results") or []
     if not results:
-        bot.send_message(chat_id, t(lang, "director_not_found"))
+        bot.send_message(chat_id, t(lang, "director_not_found_retry"))
         return
 
     directors = [p for p in results if p.get("known_for_department") == "Directing"]
     directors.sort(key=lambda x: x.get("popularity", 0), reverse=True)
 
     director_id = None
-    for p in directors[:10]:
+    for p in directors[:12]:
         pid = p.get("id")
         if not pid:
             continue
@@ -61,7 +53,7 @@ def process_director_search(message: Message):
             break
 
     if not director_id:
-        bot.send_message(chat_id, t(lang, "director_not_found"))
+        bot.send_message(chat_id, t(lang, "director_not_found_retry"))
         return
 
     send_director_card(chat_id, user_id, director_id, searched_from="director")

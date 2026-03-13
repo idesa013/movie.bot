@@ -1,18 +1,5 @@
 import requests
-from config_data.config import TMBD_API_KEY
-
-BASE_URL = "https://api.themoviedb.org/3"
-
-
-def tmdb_get(endpoint: str, params: dict | None = None) -> dict:
-    if params is None:
-        params = {}
-    params["api_key"] = TMBD_API_KEY
-    params.setdefault("language", "ru-RU")
-    url = f"{BASE_URL}/{endpoint}"
-    response = requests.get(url, params=params, timeout=12)
-    response.raise_for_status()
-    return response.json()
+from api.base import tmdb_get
 
 
 def _split_lang(language: str) -> tuple[str, str]:

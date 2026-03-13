@@ -10,12 +10,11 @@ from utils.i18n import get_user_language, tmdb_language, t, route_menu_or_comman
 from utils.access import ensure_user_not_blocked
 
 
-@bot.message_handler(state=MovieSearchState.waiting_for_title)
+@bot.message_handler(state=MovieSearchState.waiting_for_title, content_types=["text"])
 def search_movie(message: Message):
     if not ensure_user_not_blocked(bot, message.chat.id, message.from_user.id):
         return
 
-    # ✅ меню/команды не считаем поисковым запросом
     if route_menu_or_command(bot, message):
         return
 
@@ -24,6 +23,7 @@ def search_movie(message: Message):
 
     query = (message.text or "").strip()
     if not query:
+        bot.send_message(message.chat.id, t(lang, "enter_movie_title"))
         return
 
     url = "https://api.themoviedb.org/3/search/movie"
@@ -37,8 +37,7 @@ def search_movie(message: Message):
     results = r.get("results") or []
 
     if not results:
-        # ✅ state НЕ сбрасываем — можно сразу вводить другое название
-        bot.send_message(message.chat.id, t(lang, "movie_not_found"))
+        bot.send_message(message.chat.id, t(lang, "movie_not_found_retry"))
         return
 
     movie_id = results[0].get("id")

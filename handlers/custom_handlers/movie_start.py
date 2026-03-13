@@ -153,7 +153,9 @@ def _collect_movies(fetch_page, favorite_ids: set[int], limit: int = 12) -> list
     return movies
 
 
-@bot.message_handler(func=lambda m: m.text in (_TEXT["en"]["movie"], _TEXT["ru"]["movie"]))
+@bot.message_handler(
+    func=lambda m: m.text in (_TEXT["en"]["movie"], _TEXT["ru"]["movie"])
+)
 def start_movie_search(message: Message):
     if not ensure_user_not_blocked(bot, message.chat.id, message.from_user.id):
         return
@@ -162,14 +164,15 @@ def start_movie_search(message: Message):
         return
 
     lang = get_user_language(message.from_user.id)
-    bot.set_state(message.from_user.id, MovieSearchState.waiting_for_title, message.chat.id)
-    bot.send_message(
-        message.chat.id,
-        "Введите название фильма:" if lang == "ru" else "Enter the movie title:",
+    bot.set_state(
+        message.from_user.id, MovieSearchState.waiting_for_title, message.chat.id
     )
+    bot.send_message(message.chat.id, t(lang, "enter_movie_title"))
 
 
-@bot.message_handler(func=lambda m: m.text in (_TEXT["en"]["rec_new"], _TEXT["ru"]["rec_new"]))
+@bot.message_handler(
+    func=lambda m: m.text in (_TEXT["en"]["rec_new"], _TEXT["ru"]["rec_new"])
+)
 def show_new_recommendations(message: Message):
     if not ensure_user_not_blocked(bot, message.chat.id, message.from_user.id):
         return
@@ -184,7 +187,9 @@ def show_new_recommendations(message: Message):
     favorite_ids = _favorite_movie_ids(user_id)
 
     movies = _collect_movies(
-        lambda page: discover_new_movies(language=tmdb_lang, page=page, vote_average_gte=4),
+        lambda page: discover_new_movies(
+            language=tmdb_lang, page=page, vote_average_gte=4
+        ),
         favorite_ids,
         limit=12,
     )
@@ -194,11 +199,12 @@ def show_new_recommendations(message: Message):
         return
 
     markup = _movie_markup(movies)
-    text = "🆕 Новинки:" if lang == "ru" else "🆕 New releases:"
-    bot.send_message(chat_id, text, reply_markup=markup)
+    bot.send_message(chat_id, t(lang, "new_releases_title"), reply_markup=markup)
 
 
-@bot.message_handler(func=lambda m: m.text in (_TEXT["en"]["rec_genre"], _TEXT["ru"]["rec_genre"]))
+@bot.message_handler(
+    func=lambda m: m.text in (_TEXT["en"]["rec_genre"], _TEXT["ru"]["rec_genre"])
+)
 def show_recommendations(message: Message):
     if not ensure_user_not_blocked(bot, message.chat.id, message.from_user.id):
         return
@@ -235,16 +241,18 @@ def show_recommendations(message: Message):
         return
 
     genre_name = _genre_name(genre_id, lang)
-    text = (
-        f"✨ Рекомендуемые фильмы по жанру: <b>{genre_name}</b>"
-        if lang == "ru"
-        else f"✨ Recommended movies by genre: <b>{genre_name}</b>"
+    bot.send_message(
+        chat_id,
+        t(lang, "recommendations_by_genre_title", genre_name=genre_name),
+        parse_mode="HTML",
+        reply_markup=_movie_markup(movies),
     )
 
-    bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=_movie_markup(movies))
 
-
-@bot.message_handler(func=lambda m: m.text in (_TEXT["en"]["rec_new_genre"], _TEXT["ru"]["rec_new_genre"]))
+@bot.message_handler(
+    func=lambda m: m.text
+    in (_TEXT["en"]["rec_new_genre"], _TEXT["ru"]["rec_new_genre"])
+)
 def show_new_genre_recommendations(message: Message):
     if not ensure_user_not_blocked(bot, message.chat.id, message.from_user.id):
         return
@@ -281,10 +289,9 @@ def show_new_genre_recommendations(message: Message):
         return
 
     genre_name = _genre_name(genre_id, lang)
-    text = (
-        f"🆕🎭 Новинки по жанру: <b>{genre_name}</b>"
-        if lang == "ru"
-        else f"🆕🎭 New by genre: <b>{genre_name}</b>"
+    bot.send_message(
+        chat_id,
+        t(lang, "new_by_genre_title", genre_name=genre_name),
+        parse_mode="HTML",
+        reply_markup=_movie_markup(movies),
     )
-
-    bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=_movie_markup(movies))

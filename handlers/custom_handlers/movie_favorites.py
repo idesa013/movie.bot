@@ -155,14 +155,15 @@ def handle_favorites(call: CallbackQuery):
         limit = _movie_fav_limit()
 
         if not in_favorites and _movie_fav_count(user_id) >= limit:
-
-            msg = (
-                f"❗ Лимит ({limit}) добавления фильмов в Избранное исчерпан."
-                if lang == "ru"
-                else f"❗ Favorite movies limit ({limit}) reached."
+            bot.answer_callback_query(
+                call.id,
+                (
+                    f"Лимит избранных фильмов: {limit}"
+                    if lang == "ru"
+                    else f"Favorite movies limit: {limit}"
+                ),
+                show_alert=True,
             )
-
-            bot.answer_callback_query(call.id, msg, show_alert=True)
             return
 
         search_time = datetime.now().strftime(DATE_FORMAT)
