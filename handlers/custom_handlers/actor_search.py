@@ -4,7 +4,8 @@ from loader import bot
 from states.actor import ActorSearchState
 from api.tmdb_actor import search_actor, get_actor_movie_credits
 from utils.person_service import send_actor_card
-from utils.i18n import get_user_language, tmdb_language, t, route_menu_or_command
+from utils.i18n import get_user_language, tmdb_language, t
+from utils.menu_router import route_menu_or_command
 from utils.access import ensure_user_not_blocked
 
 

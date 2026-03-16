@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-
 from database.models import User
 from utils.access import ensure_user_not_blocked
+from keyboards.inline.registration import get_registration_required_keyboard
 
 LANG_EN = "en"
 LANG_RU = "ru"
@@ -55,16 +54,16 @@ TEXT = {
         "ru": "Сначала добавьте фильмы в избранное, чтобы получить рекомендации.",
     },
     "new_releases_title": {
-        "en": "🆕 New releases:",
-        "ru": "🆕 Новинки:",
+        "en": "New releases:",
+        "ru": "Новинки:",
     },
     "recommendations_by_genre_title": {
-        "en": "✨ Recommended movies by genre: <b>{genre_name}</b>",
-        "ru": "✨ Рекомендуемые фильмы по жанру: <b>{genre_name}</b>",
+        "en": "✨ Recommended movies by genre: {genre_name}",
+        "ru": "✨ Рекомендуемые фильмы по жанру: {genre_name}",
     },
     "new_by_genre_title": {
-        "en": "🆕🎭 New by genre: <b>{genre_name}</b>",
-        "ru": "🆕🎭 Новинки по жанру: <b>{genre_name}</b>",
+        "en": "New by genre: {genre_name}",
+        "ru": "Новинки по жанру: {genre_name}",
     },
     "actor_recommendations_empty": {
         "en": "Add actors to Favorites first to get actor recommendations.",
@@ -75,12 +74,12 @@ TEXT = {
         "ru": "Сначала добавьте режиссеров в избранное, чтобы получить рекомендации.",
     },
     "actor_recommendations_title": {
-        "en": "🎭 Favorite actors:",
-        "ru": "🎭 Любимые актеры:",
+        "en": "Favorite actors:",
+        "ru": "Любимые актеры:",
     },
     "director_recommendations_title": {
-        "en": "🎬 Favorite directors:",
-        "ru": "🎬 Любимые режиссеры:",
+        "en": "Favorite directors:",
+        "ru": "Любимые режиссеры:",
     },
     "fav_added": {"en": "Added: {name}", "ru": "Добавлено: {name}"},
     "fav_removed": {"en": "Removed: {name}", "ru": "Удалено: {name}"},
@@ -114,18 +113,6 @@ def is_registered(user_id: int) -> bool:
     return bool((user.email or "").strip()) and bool((user.phone_number or "").strip())
 
 
-def registration_required_markup(lang: str) -> InlineKeyboardMarkup:
-    markup = InlineKeyboardMarkup()
-    markup.add(
-        InlineKeyboardButton(
-            text=t(lang, "start_registration"),
-            callback_data="start_registration",
-            style="primary",
-        )
-    )
-    return markup
-
-
 def ensure_registered(bot, chat_id: int, user_id: int) -> bool:
     if not ensure_user_not_blocked(bot, chat_id, user_id):
         return False
@@ -137,191 +124,6 @@ def ensure_registered(bot, chat_id: int, user_id: int) -> bool:
     bot.send_message(
         chat_id,
         t(lang, "need_registration"),
-        reply_markup=registration_required_markup(lang),
+        reply_markup=get_registration_required_keyboard(lang),
     )
-    return False
-
-
-def route_menu_or_command(bot, message) -> bool:
-    txt = (getattr(message, "text", "") or "").strip()
-    if not txt:
-        return False
-
-    user_id = message.from_user.id
-    chat_id = message.chat.id
-
-    def _clear_state():
-        try:
-            bot.delete_state(user_id, chat_id)
-        except Exception:
-            pass
-
-    if txt.startswith("/"):
-        cmd = txt.split()[0].lower()
-        _clear_state()
-
-        if cmd == "/start":
-            from handlers.default_handlers.start import bot_start
-
-            bot_start(message)
-            return True
-
-        if cmd == "/help":
-            from handlers.default_handlers.help import bot_help
-
-            bot_help(message)
-            return True
-
-        if cmd == "/registration":
-            from handlers.custom_handlers.registration import registration
-
-            registration(message)
-            return True
-
-        return False
-
-    lang = get_user_language(user_id)
-
-    try:
-        from keyboards.reply.main_menu import _TEXT as main_text
-        from keyboards.reply.admin_menu import _TEXT as admin_text
-
-        main_pack = main_text.get(lang, main_text[LANG_EN])
-        admin_pack = admin_text.get(lang, admin_text[LANG_EN])
-
-        if txt == main_pack["movie"]:
-            _clear_state()
-            from handlers.custom_handlers.movie_start import start_movie_search
-
-            start_movie_search(message)
-            return True
-
-        if txt == main_pack["actor"]:
-            _clear_state()
-            from handlers.custom_handlers.actor_search_start import start_actor_search
-
-            start_actor_search(message)
-            return True
-
-        if txt == main_pack["director"]:
-            _clear_state()
-            from handlers.custom_handlers.director_search_start import (
-                start_director_search,
-            )
-
-            start_director_search(message)
-            return True
-
-        if txt == main_pack["favorites"]:
-            _clear_state()
-            from handlers.custom_handlers.menu_navigation import open_favorites_menu
-
-            open_favorites_menu(message)
-            return True
-
-        if txt == main_pack["recommendations"]:
-            _clear_state()
-            from handlers.custom_handlers.menu_navigation import (
-                open_recommendations_menu,
-            )
-
-            open_recommendations_menu(message)
-            return True
-
-        if txt == main_pack["fav_movies"]:
-            _clear_state()
-            from handlers.custom_handlers.favorites_view import show_favorite_movies
-
-            show_favorite_movies(message)
-            return True
-
-        if txt == main_pack["fav_actors"]:
-            _clear_state()
-            from handlers.custom_handlers.favorites_view import show_favorite_actors
-
-            show_favorite_actors(message)
-            return True
-
-        if txt == main_pack["fav_directors"]:
-            _clear_state()
-            from handlers.custom_handlers.favorites_view import show_favorite_directors
-
-            show_favorite_directors(message)
-            return True
-
-        if txt == main_pack["rec_new"]:
-            _clear_state()
-            from handlers.custom_handlers.movie_start import show_new_recommendations
-
-            show_new_recommendations(message)
-            return True
-
-        if txt == main_pack["rec_genre"]:
-            _clear_state()
-            from handlers.custom_handlers.movie_start import show_recommendations
-
-            show_recommendations(message)
-            return True
-
-        if txt == main_pack["rec_new_genre"]:
-            _clear_state()
-            from handlers.custom_handlers.movie_start import (
-                show_new_genre_recommendations,
-            )
-
-            show_new_genre_recommendations(message)
-            return True
-
-        if txt == main_pack["back"]:
-            _clear_state()
-            from handlers.custom_handlers.menu_navigation import back_to_main_menu
-
-            back_to_main_menu(message)
-            return True
-
-        if txt == admin_pack["admin_panel"]:
-            _clear_state()
-            from handlers.custom_handlers.admin_panel import open_admin_panel
-
-            open_admin_panel(message)
-            return True
-
-        if txt == admin_pack["users"]:
-            _clear_state()
-            from handlers.custom_handlers.admin_panel import show_users_list
-
-            show_users_list(message)
-            return True
-
-        if txt == admin_pack["messages"]:
-            _clear_state()
-            from handlers.custom_handlers.admin_panel import open_blocked_messages_users
-
-            open_blocked_messages_users(message)
-            return True
-
-        if txt == admin_pack["search_user"]:
-            _clear_state()
-            from handlers.custom_handlers.admin_panel import admin_search_user
-
-            admin_search_user(message)
-            return True
-
-        if txt == admin_pack["search_blocked"]:
-            _clear_state()
-            from handlers.custom_handlers.admin_panel import admin_search_blocked_user
-
-            admin_search_blocked_user(message)
-            return True
-
-        if txt == admin_pack["back_to_menu"]:
-            _clear_state()
-            from handlers.custom_handlers.admin_panel import admin_back_to_main_menu
-
-            admin_back_to_main_menu(message)
-            return True
-
-    except Exception:
-        return False
-
     return False

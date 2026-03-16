@@ -6,7 +6,8 @@ from loader import bot
 from config_data.config import DATE_FORMAT, TMBD_API_KEY
 from states.movie import MovieSearchState
 from utils.movie_service import send_movie_card
-from utils.i18n import get_user_language, tmdb_language, t, route_menu_or_command
+from utils.i18n import get_user_language, tmdb_language, t
+from utils.menu_router import route_menu_or_command
 from utils.access import ensure_user_not_blocked
 
 

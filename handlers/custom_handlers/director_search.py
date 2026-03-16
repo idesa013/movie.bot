@@ -4,7 +4,8 @@ from loader import bot
 from states.director import DirectorSearchState
 from api.tmdb_director import search_director, get_director_movie_credits
 from utils.person_service import send_director_card
-from utils.i18n import get_user_language, tmdb_language, t, route_menu_or_command
+from utils.i18n import get_user_language, tmdb_language, t
+from utils.menu_router import route_menu_or_command
 from utils.access import ensure_user_not_blocked
 
 
