@@ -7,6 +7,7 @@ from peewee import (
     CharField,
     DateTimeField,
     BooleanField,
+    CompositeKey,
 )
 
 from database.db import DB_PATH
@@ -44,7 +45,7 @@ class FavoriteMovie(BaseModel):
 
     class Meta:
         table_name = "favorites"
-        indexes = ((("user_id", "movie_id"), True),)
+        primary_key = CompositeKey("user_id", "movie_id")
 
 
 class FavoriteActor(BaseModel):
@@ -54,7 +55,7 @@ class FavoriteActor(BaseModel):
 
     class Meta:
         table_name = "actor_favorites"
-        indexes = ((("user_id", "actor_id"), True),)
+        primary_key = CompositeKey("user_id", "actor_id")
 
 
 class FavoriteDirector(BaseModel):
@@ -64,7 +65,7 @@ class FavoriteDirector(BaseModel):
 
     class Meta:
         table_name = "director_favorites"
-        indexes = ((("user_id", "director_id"), True),)
+        primary_key = CompositeKey("user_id", "director_id")
 
 
 class BotConfig(BaseModel):
