@@ -1,6 +1,5 @@
 from database.models import BotConfig
 
-
 DEFAULT_CONFIG = {
     "user_per_admin_page": "3",
     "qty_movie_fav": "30",

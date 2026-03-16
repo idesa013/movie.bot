@@ -1,6 +1,8 @@
 # api/base.py
 import requests
-from config_data.config import TMDB_BASE_URL, TMBD_API_KEY
+from config_data.config import TMBD_API_KEY
+
+TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
 
 def tmdb_get(endpoint: str, params: dict | None = None) -> dict:

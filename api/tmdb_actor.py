@@ -1,4 +1,3 @@
-import requests
 from api.base import tmdb_get
 
 

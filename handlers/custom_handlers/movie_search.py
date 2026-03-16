@@ -3,7 +3,7 @@ import requests
 from telebot.types import Message
 
 from loader import bot
-from config_data.config import DATE_FORMAT, TMBD_API_KEY
+from config_data.config import DATE_FORMAT
 from states.movie import MovieSearchState
 from utils.movie_service import send_movie_card
 from utils.i18n import get_user_language, tmdb_language, t
@@ -27,15 +27,17 @@ def search_movie(message: Message):
         bot.send_message(message.chat.id, t(lang, "enter_movie_title"))
         return
 
-    url = "https://api.themoviedb.org/3/search/movie"
-    params = {
-        "api_key": TMBD_API_KEY,
-        "query": query,
-        "language": tmdb_lang,
-    }
+    from api.base import tmdb_get
 
-    r = requests.get(url, params=params, timeout=12).json()
-    results = r.get("results") or []
+    data = tmdb_get(
+        "search/movie",
+        {
+            "query": query,
+            "language": tmdb_lang,
+        },
+    )
+
+    results = data.get("results") or []
 
     if not results:
         bot.send_message(message.chat.id, t(lang, "movie_not_found_retry"))

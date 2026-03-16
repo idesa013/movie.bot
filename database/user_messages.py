@@ -1,64 +1,37 @@
-import sqlite3
-from database.db import DB_PATH
+from database.models import UserMessage, now_str
 
 
 def add_user_message(user_id: int, username: str | None, user_msg: str):
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute(
-        """
-        INSERT INTO msg_from_user (user_id, username, user_msg, created_at)
-        VALUES (?, ?, ?, datetime('now', 'localtime'))
-        """,
-        (user_id, username, user_msg),
+    UserMessage.create(
+        user_id=user_id,
+        username=username,
+        user_msg=user_msg,
+        created_at=now_str(),
     )
-    conn.commit()
-    conn.close()
 
 
 def get_all_user_messages(user_id: int):
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT id, user_id, username, user_msg, created_at
-        FROM msg_from_user
-        WHERE user_id = ?
-        ORDER BY id DESC
-        """,
-        (user_id,),
+    rows = (
+        UserMessage.select()
+        .where(UserMessage.user_id == user_id)
+        .order_by(UserMessage.id.desc())
     )
-    rows = cur.fetchall()
-    conn.close()
-    return rows
+
+    return [
+        (row.id, row.user_id, row.username, row.user_msg, row.created_at)
+        for row in rows
+    ]
 
 
 def get_user_messages_from_date(user_id: int, from_date: str | None):
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
+    query = UserMessage.select().where(UserMessage.user_id == user_id)
 
     if from_date:
-        cur.execute(
-            """
-            SELECT id, user_id, username, user_msg, created_at
-            FROM msg_from_user
-            WHERE user_id = ?
-              AND created_at >= ?
-            ORDER BY id DESC
-            """,
-            (user_id, from_date),
-        )
-    else:
-        cur.execute(
-            """
-            SELECT id, user_id, username, user_msg, created_at
-            FROM msg_from_user
-            WHERE user_id = ?
-            ORDER BY id DESC
-            """,
-            (user_id,),
-        )
+        query = query.where(UserMessage.created_at >= from_date)
 
-    rows = cur.fetchall()
-    conn.close()
-    return rows
+    query = query.order_by(UserMessage.id.desc())
+
+    return [
+        (row.id, row.user_id, row.username, row.user_msg, row.created_at)
+        for row in query
+    ]

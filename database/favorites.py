@@ -1,10 +1,19 @@
+from database._favorites_base import (
+    add_favorite_record,
+    check_favorite_record,
+    remove_favorite_record,
+)
 from database.models import FavoriteMovie
 
 
 def add_favorite(
-    user_id: int, movie_id: int, search_time: str, genre_ids: str = ""
+    user_id: int,
+    movie_id: int,
+    search_time: str,
+    genre_ids: str = "",
 ) -> None:
-    FavoriteMovie.get_or_create(
+    add_favorite_record(
+        FavoriteMovie,
         user_id=user_id,
         movie_id=movie_id,
         defaults={
@@ -15,20 +24,16 @@ def add_favorite(
 
 
 def check_favorite(user_id: int, movie_id: int) -> bool:
-    return (
-        FavoriteMovie.select()
-        .where(
-            (FavoriteMovie.user_id == user_id) & (FavoriteMovie.movie_id == movie_id)
-        )
-        .exists()
+    return check_favorite_record(
+        FavoriteMovie,
+        user_id=user_id,
+        movie_id=movie_id,
     )
 
 
 def remove_favorite(user_id: int, movie_id: int) -> None:
-    (
-        FavoriteMovie.delete()
-        .where(
-            (FavoriteMovie.user_id == user_id) & (FavoriteMovie.movie_id == movie_id)
-        )
-        .execute()
+    remove_favorite_record(
+        FavoriteMovie,
+        user_id=user_id,
+        movie_id=movie_id,
     )
