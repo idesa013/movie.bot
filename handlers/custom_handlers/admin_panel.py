@@ -447,7 +447,22 @@ def admin_find_user(message: Message):
         return
 
     lang = get_user_language(message.from_user.id)
-    username = (message.text or "").strip().replace("@", "")
+    text = (message.text or "").strip()
+
+    if text in (
+        ADMIN_MENU_TEXT["en"]["back_to_menu"],
+        ADMIN_MENU_TEXT["ru"]["back_to_menu"],
+    ):
+        bot.delete_state(message.from_user.id, message.chat.id)
+        set_selected_user(message.from_user.id, None)
+        bot.send_message(
+            message.chat.id,
+            "Выберите действие:" if lang == "ru" else "Choose an action:",
+            reply_markup=get_main_menu(message.from_user.id, lang),
+        )
+        return
+
+    username = text.replace("@", "")
 
     if not username:
         bot.send_message(
@@ -459,6 +474,21 @@ def admin_find_user(message: Message):
             ),
         )
         return
+
+    user = User.get_or_none(User.username == username)
+    if not user:
+        bot.send_message(
+            message.chat.id,
+            (
+                "Пользователь не найден. Попробуйте ещё раз или нажмите 'Назад в меню'."
+                if lang == "ru"
+                else "User not found. Try again or press 'Back to Menu'."
+            ),
+        )
+        return
+
+    bot.delete_state(message.from_user.id, message.chat.id)
+    _send_user_card(message.chat.id, message.from_user.id, user.id, 1)
 
     user = User.get_or_none(User.username == username)
 
@@ -483,7 +513,22 @@ def admin_find_blocked_user(message: Message):
         return
 
     lang = get_user_language(message.from_user.id)
-    username = (message.text or "").strip().replace("@", "")
+    text = (message.text or "").strip()
+
+    if text in (
+        ADMIN_MENU_TEXT["en"]["back_to_menu"],
+        ADMIN_MENU_TEXT["ru"]["back_to_menu"],
+    ):
+        bot.delete_state(message.from_user.id, message.chat.id)
+        set_selected_user(message.from_user.id, None)
+        bot.send_message(
+            message.chat.id,
+            "Выберите действие:" if lang == "ru" else "Choose an action:",
+            reply_markup=get_main_menu(message.from_user.id, lang),
+        )
+        return
+
+    username = text.replace("@", "")
 
     if not username:
         bot.send_message(
@@ -495,6 +540,21 @@ def admin_find_blocked_user(message: Message):
             ),
         )
         return
+
+    user = User.get_or_none((User.username == username) & (User.active == False))
+    if not user:
+        bot.send_message(
+            message.chat.id,
+            (
+                "Заблокированный пользователь не найден. Попробуйте ещё раз или нажмите 'Назад в меню'."
+                if lang == "ru"
+                else "Blocked user not found. Try again or press 'Back to Menu'."
+            ),
+        )
+        return
+
+    bot.delete_state(message.from_user.id, message.chat.id)
+    _send_user_card(message.chat.id, message.from_user.id, user.id, 1)
 
     user = User.get_or_none((User.username == username) & (User.active == False))
 
