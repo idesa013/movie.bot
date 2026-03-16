@@ -1,50 +1,34 @@
-import sqlite3
-from database.db import DB_PATH
+from database.models import FavoriteMovie
 
 
 def add_favorite(
     user_id: int, movie_id: int, search_time: str, genre_ids: str = ""
 ) -> None:
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-
-    cur.execute(
-        """
-        INSERT INTO favorites (user_id, movie_id, search_time, genre_ids)
-        VALUES (?, ?, ?, ?)
-        """,
-        (user_id, movie_id, search_time, genre_ids),
+    FavoriteMovie.get_or_create(
+        user_id=user_id,
+        movie_id=movie_id,
+        defaults={
+            "search_time": search_time,
+            "genre_ids": genre_ids,
+        },
     )
-
-    conn.commit()
-    conn.close()
 
 
 def check_favorite(user_id: int, movie_id: int) -> bool:
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-
-    cur.execute(
-        """
-        SELECT COUNT(*) FROM favorites WHERE user_id = ? AND movie_id = ?
-        """,
-        (user_id, movie_id),
+    return (
+        FavoriteMovie.select()
+        .where(
+            (FavoriteMovie.user_id == user_id) & (FavoriteMovie.movie_id == movie_id)
+        )
+        .exists()
     )
 
-    count = cur.fetchone()[0]
-    conn.close()
-    return count > 0
 
-
-# Функция удаления фильма из избранного
 def remove_favorite(user_id: int, movie_id: int) -> None:
-    import sqlite3
-    from database.db import DB_PATH
-
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute(
-        "DELETE FROM favorites WHERE user_id = ? AND movie_id = ?", (user_id, movie_id)
+    (
+        FavoriteMovie.delete()
+        .where(
+            (FavoriteMovie.user_id == user_id) & (FavoriteMovie.movie_id == movie_id)
+        )
+        .execute()
     )
-    conn.commit()
-    conn.close()

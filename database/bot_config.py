@@ -1,5 +1,4 @@
-import sqlite3
-from database.db import DB_PATH
+from database.models import BotConfig
 
 
 DEFAULT_CONFIG = {
@@ -11,50 +10,18 @@ DEFAULT_CONFIG = {
 
 
 def ensure_default_bot_config():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-
-    cur.execute(
-        """
-        CREATE TABLE IF NOT EXISTS bot_config (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            param_name TEXT NOT NULL UNIQUE,
-            param_value TEXT NOT NULL
-        )
-        """
-    )
-
     for param_name, param_value in DEFAULT_CONFIG.items():
-        cur.execute(
-            """
-            INSERT OR IGNORE INTO bot_config (param_name, param_value)
-            VALUES (?, ?)
-            """,
-            (param_name, param_value),
+        BotConfig.get_or_create(
+            param_name=param_name,
+            defaults={"param_value": param_value},
         )
-
-    conn.commit()
-    conn.close()
 
 
 def get_config_value(param_name: str, default=None):
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT param_value
-        FROM bot_config
-        WHERE param_name = ?
-        LIMIT 1
-        """,
-        (param_name,),
-    )
-    row = cur.fetchone()
-    conn.close()
-
+    row = BotConfig.get_or_none(BotConfig.param_name == param_name)
     if not row:
         return default
-    return row[0]
+    return row.param_value
 
 
 def get_config_int(param_name: str, default: int) -> int:

@@ -1,39 +1,31 @@
-import sqlite3
-from database.db import DB_PATH
+from database.models import FavoriteDirector
 
 
 def add_director_favorite(user_id: int, director_id: int, search_time: str) -> None:
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute(
-        """
-        INSERT INTO director_favorites (user_id, director_id, search_time)
-        VALUES (?, ?, ?)
-        """,
-        (user_id, director_id, search_time),
+    FavoriteDirector.get_or_create(
+        user_id=user_id,
+        director_id=director_id,
+        defaults={"search_time": search_time},
     )
-    conn.commit()
-    conn.close()
 
 
 def check_director_favorite(user_id: int, director_id: int) -> bool:
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT COUNT(*) FROM director_favorites WHERE user_id = ? AND director_id = ?",
-        (user_id, director_id),
+    return (
+        FavoriteDirector.select()
+        .where(
+            (FavoriteDirector.user_id == user_id)
+            & (FavoriteDirector.director_id == director_id)
+        )
+        .exists()
     )
-    count = cur.fetchone()[0]
-    conn.close()
-    return count > 0
 
 
 def remove_director_favorite(user_id: int, director_id: int) -> None:
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute(
-        "DELETE FROM director_favorites WHERE user_id = ? AND director_id = ?",
-        (user_id, director_id),
+    (
+        FavoriteDirector.delete()
+        .where(
+            (FavoriteDirector.user_id == user_id)
+            & (FavoriteDirector.director_id == director_id)
+        )
+        .execute()
     )
-    conn.commit()
-    conn.close()
