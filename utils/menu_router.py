@@ -1,4 +1,10 @@
+import importlib
 from utils.i18n import get_user_language, LANG_EN
+
+
+def load_handler(module_path, func_name):
+    module = importlib.import_module(module_path)
+    return getattr(module, func_name)
 
 
 def route_menu_or_command(bot, message) -> bool:
@@ -77,31 +83,89 @@ def route_menu_or_command(bot, message) -> bool:
 
         routes = {
             # основное меню
-            main_pack["movie"]: start_movie_search,
-            main_pack["actor"]: start_actor_search,
-            main_pack["director"]: start_director_search,
-            main_pack["favorites"]: open_favorites_menu,
-            main_pack["recommendations"]: open_recommendations_menu,
-            main_pack["fav_movies"]: show_favorite_movies,
-            main_pack["fav_actors"]: show_favorite_actors,
-            main_pack["fav_directors"]: show_favorite_directors,
-            main_pack["rec_new"]: show_new_recommendations,
-            main_pack["rec_genre"]: show_recommendations,
-            main_pack["rec_new_genre"]: show_new_genre_recommendations,
-            main_pack["back"]: back_to_main_menu,
+            main_pack["movie"]: (
+                "handlers.custom_handlers.movie_start",
+                "start_movie_search",
+            ),
+            main_pack["actor"]: (
+                "handlers.custom_handlers.actor_search_start",
+                "start_actor_search",
+            ),
+            main_pack["director"]: (
+                "handlers.custom_handlers.director_search_start",
+                "start_director_search",
+            ),
+            main_pack["favorites"]: (
+                "handlers.custom_handlers.menu_navigation",
+                "open_favorites_menu",
+            ),
+            main_pack["recommendations"]: (
+                "handlers.custom_handlers.menu_navigation",
+                "open_recommendations_menu",
+            ),
+            main_pack["fav_movies"]: (
+                "handlers.custom_handlers.favorites_view",
+                "show_favorite_movies",
+            ),
+            main_pack["fav_actors"]: (
+                "handlers.custom_handlers.favorites_view",
+                "show_favorite_actors",
+            ),
+            main_pack["fav_directors"]: (
+                "handlers.custom_handlers.favorites_view",
+                "show_favorite_directors",
+            ),
+            main_pack["rec_new"]: (
+                "handlers.custom_handlers.movie_start",
+                "show_new_recommendations",
+            ),
+            main_pack["rec_genre"]: (
+                "handlers.custom_handlers.movie_start",
+                "show_recommendations",
+            ),
+            main_pack["rec_new_genre"]: (
+                "handlers.custom_handlers.movie_start",
+                "show_new_genre_recommendations",
+            ),
+            main_pack["back"]: (
+                "handlers.custom_handlers.menu_navigation",
+                "back_to_main_menu",
+            ),
             # админ
-            admin_pack["admin_panel"]: open_admin_panel,
-            admin_pack["users"]: show_users_list,
-            admin_pack["messages"]: open_blocked_messages_users,
-            admin_pack["search_user"]: admin_search_user,
-            admin_pack["search_blocked"]: admin_search_blocked_user,
-            admin_pack["back_to_menu"]: admin_back_to_main_menu,
+            admin_pack["admin_panel"]: (
+                "handlers.custom_handlers.admin_panel",
+                "open_admin_panel",
+            ),
+            admin_pack["users"]: (
+                "handlers.custom_handlers.admin_panel",
+                "show_users_list",
+            ),
+            admin_pack["messages"]: (
+                "handlers.custom_handlers.admin_panel",
+                "open_blocked_messages_users",
+            ),
+            admin_pack["search_user"]: (
+                "handlers.custom_handlers.admin_panel",
+                "admin_search_user",
+            ),
+            admin_pack["search_blocked"]: (
+                "handlers.custom_handlers.admin_panel",
+                "admin_search_blocked_user",
+            ),
+            admin_pack["back_to_menu"]: (
+                "handlers.custom_handlers.admin_panel",
+                "admin_back_to_main_menu",
+            ),
         }
 
-        handler = routes.get(txt)
+        target = routes.get(txt)
 
-        if handler:
+        if target:
             clear_state()
+
+            module, func = target
+            handler = load_handler(module, func)
+
             handler(message)
             return True
 
