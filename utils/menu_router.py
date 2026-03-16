@@ -49,38 +49,6 @@ def route_menu_or_command(bot, message) -> bool:
         main_pack = MAIN_MENU_TEXT.get(lang, MAIN_MENU_TEXT[LANG_EN])
         admin_pack = ADMIN_MENU_TEXT.get(lang, ADMIN_MENU_TEXT[LANG_EN])
 
-        # импортируем обработчики
-        from handlers.custom_handlers.movie_start import (
-            start_movie_search,
-            show_new_recommendations,
-            show_recommendations,
-            show_new_genre_recommendations,
-        )
-
-        from handlers.custom_handlers.actor_search_start import start_actor_search
-        from handlers.custom_handlers.director_search_start import start_director_search
-
-        from handlers.custom_handlers.menu_navigation import (
-            open_favorites_menu,
-            open_recommendations_menu,
-            back_to_main_menu,
-        )
-
-        from handlers.custom_handlers.favorites_view import (
-            show_favorite_movies,
-            show_favorite_actors,
-            show_favorite_directors,
-        )
-
-        from handlers.custom_handlers.admin_panel import (
-            open_admin_panel,
-            show_users_list,
-            open_blocked_messages_users,
-            admin_search_user,
-            admin_search_blocked_user,
-            admin_back_to_main_menu,
-        )
-
         routes = {
             # основное меню
             main_pack["movie"]: (
