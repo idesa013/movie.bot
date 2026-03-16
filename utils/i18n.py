@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from database.models import User
 from utils.access import ensure_user_not_blocked
-from keyboards.inline.registration import get_registration_required_keyboard
+
 
 LANG_EN = "en"
 LANG_RU = "ru"
@@ -121,6 +121,9 @@ def ensure_registered(bot, chat_id: int, user_id: int) -> bool:
         return True
 
     lang = get_user_language(user_id)
+
+    from keyboards.inline.registration import get_registration_required_keyboard
+
     bot.send_message(
         chat_id,
         t(lang, "need_registration"),
