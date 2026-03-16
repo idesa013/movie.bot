@@ -7,7 +7,7 @@ from database.bot_config import get_config_int
 from api.tmdb_movie import get_movie_details
 from api.tmdb_actor import get_actor_details
 from api.tmdb_director import get_director_details
-from keyboards.reply.main_menu import _TEXT
+from keyboards.reply.texts import MAIN_MENU_TEXT
 from utils.i18n import get_user_language, tmdb_language, ensure_registered
 from utils.admin_context import (
     resolve_effective_user_id,
@@ -247,7 +247,7 @@ def send_favorites_list(
 
 @bot.message_handler(
     func=lambda m: (m.text or "").strip()
-    in (_TEXT["en"]["fav_movies"], _TEXT["ru"]["fav_movies"])
+    in (MAIN_MENU_TEXT["en"]["fav_movies"], MAIN_MENU_TEXT["ru"]["fav_movies"])
 )
 def show_favorite_movies(message: Message):
     if not ensure_registered(bot, message.chat.id, message.from_user.id):
@@ -260,7 +260,7 @@ def show_favorite_movies(message: Message):
 
 @bot.message_handler(
     func=lambda m: (m.text or "").strip()
-    in (_TEXT["en"]["fav_actors"], _TEXT["ru"]["fav_actors"])
+    in (MAIN_MENU_TEXT["en"]["fav_actors"], MAIN_MENU_TEXT["ru"]["fav_actors"])
 )
 def show_favorite_actors(message: Message):
     if not ensure_registered(bot, message.chat.id, message.from_user.id):
@@ -273,7 +273,7 @@ def show_favorite_actors(message: Message):
 
 @bot.message_handler(
     func=lambda m: (m.text or "").strip()
-    in (_TEXT["en"]["fav_directors"], _TEXT["ru"]["fav_directors"])
+    in (MAIN_MENU_TEXT["en"]["fav_directors"], MAIN_MENU_TEXT["ru"]["fav_directors"])
 )
 def show_favorite_directors(message: Message):
     if not ensure_registered(bot, message.chat.id, message.from_user.id):

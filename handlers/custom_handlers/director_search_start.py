@@ -4,11 +4,12 @@ from loader import bot
 from states.director import DirectorSearchState
 from utils.i18n import get_user_language, ensure_registered, t
 from utils.access import ensure_user_not_blocked
-from keyboards.reply.main_menu import _TEXT
+from keyboards.reply.texts import MAIN_MENU_TEXT
 
 
 @bot.message_handler(
-    func=lambda m: m.text in (_TEXT["en"]["director"], _TEXT["ru"]["director"])
+    func=lambda m: m.text
+    in (MAIN_MENU_TEXT["en"]["director"], MAIN_MENU_TEXT["ru"]["director"])
 )
 def start_director_search(message: Message):
     if not ensure_user_not_blocked(bot, message.chat.id, message.from_user.id):

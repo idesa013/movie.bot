@@ -9,7 +9,7 @@ from utils.i18n import get_user_language, tmdb_language, t, ensure_registered
 from api.tmdb_movie import discover_movies_by_genre, discover_new_movies
 from utils.access import ensure_user_not_blocked
 from database.db import DB_PATH
-from keyboards.reply.main_menu import _TEXT
+from keyboards.reply.texts import MAIN_MENU_TEXT
 
 
 GENRE_NAMES = {
@@ -154,7 +154,8 @@ def _collect_movies(fetch_page, favorite_ids: set[int], limit: int = 12) -> list
 
 
 @bot.message_handler(
-    func=lambda m: m.text in (_TEXT["en"]["movie"], _TEXT["ru"]["movie"])
+    func=lambda m: m.text
+    in (MAIN_MENU_TEXT["en"]["movie"], MAIN_MENU_TEXT["ru"]["movie"])
 )
 def start_movie_search(message: Message):
     if not ensure_user_not_blocked(bot, message.chat.id, message.from_user.id):
@@ -171,7 +172,8 @@ def start_movie_search(message: Message):
 
 
 @bot.message_handler(
-    func=lambda m: m.text in (_TEXT["en"]["rec_new"], _TEXT["ru"]["rec_new"])
+    func=lambda m: m.text
+    in (MAIN_MENU_TEXT["en"]["rec_new"], MAIN_MENU_TEXT["ru"]["rec_new"])
 )
 def show_new_recommendations(message: Message):
     if not ensure_user_not_blocked(bot, message.chat.id, message.from_user.id):
@@ -203,7 +205,8 @@ def show_new_recommendations(message: Message):
 
 
 @bot.message_handler(
-    func=lambda m: m.text in (_TEXT["en"]["rec_genre"], _TEXT["ru"]["rec_genre"])
+    func=lambda m: m.text
+    in (MAIN_MENU_TEXT["en"]["rec_genre"], MAIN_MENU_TEXT["ru"]["rec_genre"])
 )
 def show_recommendations(message: Message):
     if not ensure_user_not_blocked(bot, message.chat.id, message.from_user.id):
@@ -251,7 +254,7 @@ def show_recommendations(message: Message):
 
 @bot.message_handler(
     func=lambda m: m.text
-    in (_TEXT["en"]["rec_new_genre"], _TEXT["ru"]["rec_new_genre"])
+    in (MAIN_MENU_TEXT["en"]["rec_new_genre"], MAIN_MENU_TEXT["ru"]["rec_new_genre"])
 )
 def show_new_genre_recommendations(message: Message):
     if not ensure_user_not_blocked(bot, message.chat.id, message.from_user.id):

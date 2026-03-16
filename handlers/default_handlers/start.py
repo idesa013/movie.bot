@@ -1,23 +1,17 @@
 from datetime import datetime
-from telebot.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
+from telebot.types import Message, CallbackQuery
+
+from keyboards.inline.language import get_language_keyboard
 from keyboards.reply.admin_menu import get_main_menu
 from loader import bot
 from database.models import User
 from utils.i18n import t, LANG_EN, LANG_RU, ensure_registered
 
 
-def _lang_markup() -> InlineKeyboardMarkup:
-    m = InlineKeyboardMarkup()
-    m.row(
-        InlineKeyboardButton(text="English", callback_data="set_lang:en"),
-        InlineKeyboardButton(text="Русский", callback_data="set_lang:ru"),
-    )
-    return m
-
-
 def _ensure_user_row(user_id: int, username: str | None, language: str) -> None:
     user = User.get_or_none(User.user_id == user_id)
+
     if user is None:
         User.create(
             user_id=user_id,
@@ -33,15 +27,19 @@ def _ensure_user_row(user_id: int, username: str | None, language: str) -> None:
         )
     else:
         changed = False
+
         if username and user.username != username:
             user.username = username
             changed = True
+
         if getattr(user, "language", None) != language:
             user.language = language
             changed = True
+
         if getattr(user, "active", None) is None:
             user.active = True
             changed = True
+
         if changed:
             user.save()
 
@@ -51,13 +49,14 @@ def bot_start(message: Message):
     bot.send_message(
         message.chat.id,
         f"{t(LANG_EN, 'choose_language')} / {t(LANG_RU, 'choose_language')}",
-        reply_markup=_lang_markup(),
+        reply_markup=get_language_keyboard(),
     )
 
 
-@bot.callback_query_handler(func=lambda c: c.data.startswith("set_lang:"))
+@bot.callback_query_handler(func=lambda call: call.data.startswith("set_lang:"))
 def set_language(call: CallbackQuery):
     lang = call.data.split(":", 1)[1]
+
     if lang not in (LANG_EN, LANG_RU):
         bot.answer_callback_query(call.id, "Unknown language")
         return

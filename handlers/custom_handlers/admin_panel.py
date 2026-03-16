@@ -11,7 +11,8 @@ from database.models import User
 from database.block_log import add_block_log, get_last_block_time
 from database.user_messages import get_user_messages_from_date, get_all_user_messages
 from database.bot_config import get_config_int
-from keyboards.reply.admin_menu import _TEXT, is_admin, get_main_menu, admin_panel_menu
+from keyboards.reply.admin_menu import is_admin, get_main_menu, admin_panel_menu
+from keyboards.reply.texts import ADMIN_MENU_TEXT
 from utils.i18n import get_user_language
 from utils.admin_context import set_selected_user
 from handlers.custom_handlers.favorites_view import send_favorites_list
@@ -340,7 +341,7 @@ def _blocked_user_messages_markup(page: int, lang: str):
 
 @bot.message_handler(
     func=lambda m: (m.text or "").strip()
-    in (_TEXT["en"]["admin_panel"], _TEXT["ru"]["admin_panel"])
+    in (ADMIN_MENU_TEXT["en"]["admin_panel"], ADMIN_MENU_TEXT["ru"]["admin_panel"])
 )
 def open_admin_panel(message: Message):
     if _deny_if_not_admin(message):
@@ -365,7 +366,7 @@ def open_admin_panel(message: Message):
 
 @bot.message_handler(
     func=lambda m: (m.text or "").strip()
-    in (_TEXT["en"]["users"], _TEXT["ru"]["users"])
+    in (ADMIN_MENU_TEXT["en"]["users"], ADMIN_MENU_TEXT["ru"]["users"])
 )
 def show_users_list(message: Message):
     if _deny_if_not_admin(message):
@@ -382,7 +383,7 @@ def show_users_list(message: Message):
 
 @bot.message_handler(
     func=lambda m: (m.text or "").strip()
-    in (_TEXT["en"]["messages"], _TEXT["ru"]["messages"])
+    in (ADMIN_MENU_TEXT["en"]["messages"], ADMIN_MENU_TEXT["ru"]["messages"])
 )
 def open_blocked_messages_users(message: Message):
     if _deny_if_not_admin(message):
@@ -399,7 +400,7 @@ def open_blocked_messages_users(message: Message):
 
 @bot.message_handler(
     func=lambda m: (m.text or "").strip()
-    in (_TEXT["en"]["search_user"], _TEXT["ru"]["search_user"])
+    in (ADMIN_MENU_TEXT["en"]["search_user"], ADMIN_MENU_TEXT["ru"]["search_user"])
 )
 def admin_search_user(message: Message):
     if _deny_if_not_admin(message):
@@ -417,7 +418,10 @@ def admin_search_user(message: Message):
 
 @bot.message_handler(
     func=lambda m: (m.text or "").strip()
-    in (_TEXT["en"]["search_blocked"], _TEXT["ru"]["search_blocked"])
+    in (
+        ADMIN_MENU_TEXT["en"]["search_blocked"],
+        ADMIN_MENU_TEXT["ru"]["search_blocked"],
+    )
 )
 def admin_search_blocked_user(message: Message):
     if _deny_if_not_admin(message):
@@ -697,7 +701,7 @@ def admin_user_favorites(call: CallbackQuery):
 
 @bot.message_handler(
     func=lambda m: (m.text or "").strip()
-    in (_TEXT["en"]["back_to_menu"], _TEXT["ru"]["back_to_menu"])
+    in (ADMIN_MENU_TEXT["en"]["back_to_menu"], ADMIN_MENU_TEXT["ru"]["back_to_menu"])
 )
 def admin_back_to_main_menu(message: Message):
     if _deny_if_not_admin(message):

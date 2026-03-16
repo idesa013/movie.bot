@@ -1,7 +1,7 @@
 from telebot.types import Message
 
 from loader import bot
-from keyboards.reply.main_menu import _TEXT as MENU_TEXT
+from keyboards.reply.texts import MAIN_MENU_TEXT
 from utils.i18n import get_user_language
 from utils.access import ensure_user_not_blocked
 
@@ -16,7 +16,7 @@ def _has_state(message: Message) -> bool:
 
 
 def _get_menu_texts(lang: str) -> dict:
-    return MENU_TEXT.get(lang, MENU_TEXT["en"])
+    return MAIN_MENU_TEXT.get(lang, MAIN_MENU_TEXT["en"])
 
 
 def _route_commands(message: Message) -> bool:
@@ -33,16 +33,19 @@ def _route_commands(message: Message) -> bool:
 
     if cmd == "/start":
         from handlers.default_handlers.start import bot_start
+
         bot_start(message)
         return True
 
     if cmd == "/help":
         from handlers.default_handlers.help import bot_help
+
         bot_help(message)
         return True
 
     if cmd == "/registration":
         from handlers.custom_handlers.registration import registration
+
         registration(message)
         return True
 
@@ -55,18 +58,37 @@ def _route_main_menu_buttons(message: Message) -> bool:
     menu = _get_menu_texts(lang)
 
     if txt == menu["movie"]:
-        bot.set_state(message.from_user.id, MovieSearchState.waiting_for_title, message.chat.id)
-        bot.send_message(message.chat.id, "Введите название фильма:" if lang == "ru" else "Enter movie title:")
+        bot.set_state(
+            message.from_user.id, MovieSearchState.waiting_for_title, message.chat.id
+        )
+        bot.send_message(
+            message.chat.id,
+            "Введите название фильма:" if lang == "ru" else "Enter movie title:",
+        )
         return True
 
     if txt == menu["actor"]:
-        bot.set_state(message.from_user.id, ActorSearchState.waiting_for_actor_name, message.chat.id)
-        bot.send_message(message.chat.id, "Введите имя актёра:" if lang == "ru" else "Enter actor name:")
+        bot.set_state(
+            message.from_user.id,
+            ActorSearchState.waiting_for_actor_name,
+            message.chat.id,
+        )
+        bot.send_message(
+            message.chat.id,
+            "Введите имя актёра:" if lang == "ru" else "Enter actor name:",
+        )
         return True
 
     if txt == menu["director"]:
-        bot.set_state(message.from_user.id, DirectorSearchState.waiting_for_director_name, message.chat.id)
-        bot.send_message(message.chat.id, "Введите имя режиссёра:" if lang == "ru" else "Enter director name:")
+        bot.set_state(
+            message.from_user.id,
+            DirectorSearchState.waiting_for_director_name,
+            message.chat.id,
+        )
+        bot.send_message(
+            message.chat.id,
+            "Введите имя режиссёра:" if lang == "ru" else "Enter director name:",
+        )
         return True
 
     return False
@@ -86,5 +108,10 @@ def echo(message: Message):
     lang = get_user_language(message.from_user.id)
     bot.send_message(
         message.chat.id,
-        ("Эхо без состояния или фильтра.\nСообщение: " if lang == "ru" else "Echo (no state/filter).\nMessage: ") + (message.text or ""),
+        (
+            "Эхо без состояния или фильтра.\nСообщение: "
+            if lang == "ru"
+            else "Echo (no state/filter).\nMessage: "
+        )
+        + (message.text or ""),
     )
