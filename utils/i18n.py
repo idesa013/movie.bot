@@ -85,9 +85,6 @@ TEXT = {
     "fav_removed": {"en": "Removed: {name}", "ru": "Удалено: {name}"},
 }
 
-
-SUPPORTED_LANGS = (LANG_EN, LANG_RU)
-
 COMMANDS = {
     "start": {
         "en": "Start the bot",

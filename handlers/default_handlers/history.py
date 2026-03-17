@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from email import header
 from html import escape
 
 from telebot.types import Message
@@ -16,24 +17,24 @@ from api.tmdb_director import get_director_details
 
 HISTORY_TEXT = {
     "title": {
-        "ru": "История запросов:",
-        "en": "Search history:",
+        "ru": "<b>История запросов:</b>",
+        "en": "<b>Search history:</b>",
     },
     "empty": {
         "ru": "История запросов пуста.",
         "en": "Search history is empty.",
     },
     "date": {
-        "ru": "Дата/время",
-        "en": "Date/time",
+        "ru": "Дата/Время",
+        "en": "Date/Time",
     },
     "type": {
         "ru": "Тип",
         "en": "Type",
     },
     "name": {
-        "ru": "Название / имя",
-        "en": "Title / name",
+        "ru": "Название/Имя",
+        "en": "Title/Name",
     },
     "source": {
         "ru": "Откуда",
@@ -150,14 +151,13 @@ def show_history(message: Message):
         return
 
     header = (
-        f"{ht(lang, 'date'):<19} | "
-        f"{ht(lang, 'type'):<9} | "
-        f"{ht(lang, 'name'):<28} | "
-        f"{ht(lang, 'source'):<9} | "
+        f"{ht(lang, 'date'):<16} | "
+        f"{ht(lang, 'type'):<8} | "
+        f"{ht(lang, 'source'):<8} | "
         f"{ht(lang, 'fav')}"
     )
-
-    lines = [header, "-" * len(header)]
+    separator = "-" * len(header)
+    lines = [header, separator]
 
     for row in rows:
         entity_type = row["entity_type"]
@@ -174,11 +174,12 @@ def show_history(message: Message):
         fav_mark = "★" if in_favorites else "-"
 
         lines.append(
-            f"{search_time:<19} | "
-            f"{type_label:<9} | "
-            f"{display_name[:28]:<28} | "
-            f"{source_label:<9} | "
+            f"{search_time:<16} | "
+            f"{type_label:<8} | "
+            f"{source_label:<8} | "
             f"{fav_mark}"
+            f"\n{ht(lang, 'name')}:  {display_name[:28]} "
+            f"{separator}"
         )
 
     text = f"{ht(lang, 'title')}\n<pre>{escape(chr(10).join(lines))}</pre>"

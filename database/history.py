@@ -47,7 +47,11 @@ def get_user_history(user_id: int, limit: int = 20) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
 
     movie_logs = (
-        MovieSearchLog.select()
+        MovieSearchLog.select(
+            MovieSearchLog.movie_id,
+            MovieSearchLog.search_time,
+            MovieSearchLog.searched_from,
+        )
         .where(MovieSearchLog.user_id == user_id)
         .order_by(MovieSearchLog.search_time.desc())
         .limit(limit)
@@ -64,7 +68,11 @@ def get_user_history(user_id: int, limit: int = 20) -> list[dict[str, Any]]:
         )
 
     actor_logs = (
-        ActorSearchLog.select()
+        ActorSearchLog.select(
+            ActorSearchLog.actor_id,
+            ActorSearchLog.search_time,
+            ActorSearchLog.searched_from,
+        )
         .where(ActorSearchLog.user_id == user_id)
         .order_by(ActorSearchLog.search_time.desc())
         .limit(limit)
@@ -81,7 +89,11 @@ def get_user_history(user_id: int, limit: int = 20) -> list[dict[str, Any]]:
         )
 
     director_logs = (
-        DirectorSearchLog.select()
+        DirectorSearchLog.select(
+            DirectorSearchLog.director_id,
+            DirectorSearchLog.search_time,
+            DirectorSearchLog.searched_from,
+        )
         .where(DirectorSearchLog.user_id == user_id)
         .order_by(DirectorSearchLog.search_time.desc())
         .limit(limit)
@@ -97,5 +109,5 @@ def get_user_history(user_id: int, limit: int = 20) -> list[dict[str, Any]]:
             }
         )
 
-    rows.sort(key=lambda x: x["search_time"], reverse=True)
+    rows.sort(key=lambda x: x["search_time"], reverse=False)
     return rows[:limit]
