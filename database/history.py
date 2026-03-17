@@ -109,5 +109,5 @@ def get_user_history(user_id: int, limit: int = 20) -> list[dict[str, Any]]:
             }
         )
 
-    rows.sort(key=lambda x: x["search_time"], reverse=False)
+    rows.sort(key=lambda x: x["search_time"], reverse=True)
     return rows[:limit]
