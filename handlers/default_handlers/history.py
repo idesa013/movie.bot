@@ -10,6 +10,8 @@ from database.history import get_user_history
 from utils.access import ensure_user_not_blocked
 from utils.i18n import get_user_language, tmdb_language, LANG_RU
 
+from keyboards.reply.admin_menu import get_main_menu
+
 from api.tmdb_movie import get_movie_details
 from api.tmdb_actor import get_actor_details
 from api.tmdb_director import get_director_details
@@ -41,8 +43,8 @@ HISTORY_TEXT = {
         "en": "From",
     },
     "fav": {
-        "ru": "Favorite",
-        "en": "Избранное",
+        "ru": "Избранное",
+        "en": "Favorite",
     },
     "movie": {
         "ru": "фильм",
@@ -183,4 +185,9 @@ def show_history(message: Message):
         )
 
     text = f"{ht(lang, 'title')}\n<pre>{escape(chr(10).join(lines))}</pre>"
-    bot.send_message(message.chat.id, text, parse_mode="HTML")
+    bot.send_message(
+        message.chat.id,
+        text,
+        parse_mode="HTML",
+        reply_markup=get_main_menu(message.from_user.id, lang),
+    )

@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from datetime import datetime
+from config_data.config import DATE_FORMAT
+
 from typing import Any
 
 from database.models import (
@@ -109,5 +112,11 @@ def get_user_history(user_id: int, limit: int = 20) -> list[dict[str, Any]]:
             }
         )
 
-    rows.sort(key=lambda x: x["search_time"], reverse=True)
+    def _dt(value: str) -> datetime:
+        try:
+            return datetime.strptime(value, DATE_FORMAT)
+        except Exception:
+            return datetime.min
+
+    rows.sort(key=lambda x: _dt(x["search_time"]), reverse=True)
     return rows[:limit]

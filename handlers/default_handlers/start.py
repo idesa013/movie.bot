@@ -7,6 +7,7 @@ from keyboards.reply.admin_menu import get_main_menu
 from loader import bot
 from database.models import User
 from utils.i18n import t, LANG_EN, LANG_RU, ensure_registered
+from utils.set_bot_commands import set_chat_commands
 
 
 def _ensure_user_row(user_id: int, username: str | None, language: str) -> None:
@@ -62,6 +63,7 @@ def set_language(call: CallbackQuery):
         return
 
     _ensure_user_row(call.from_user.id, call.from_user.username, lang)
+    set_chat_commands(bot, call.message.chat.id, lang)
 
     bot.edit_message_text(
         t(lang, "language_saved"),

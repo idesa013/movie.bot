@@ -32,6 +32,7 @@ def route_menu_or_command(bot, message) -> bool:
             "/start": ("handlers.default_handlers.start", "bot_start"),
             "/help": ("handlers.default_handlers.help", "bot_help"),
             "/registration": ("handlers.custom_handlers.registration", "registration"),
+            "/history": ("handlers.default_handlers.history", "show_history"),
         }
 
         target = commands.get(cmd)

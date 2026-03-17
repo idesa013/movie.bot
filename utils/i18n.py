@@ -152,6 +152,5 @@ def ensure_registered(bot, chat_id: int, user_id: int) -> bool:
 
 
 def get_commands_for_lang(lang: str) -> list[tuple[str, str]]:
-    if lang not in TMDB_LANG:
-        lang = LANG_EN
-    return [(cmd, titles.get(lang, cmd)) for cmd, titles in COMMANDS.items()]
+    lang = lang if lang in TMDB_LANG else LANG_EN
+    return [(cmd, labels.get(lang, cmd)) for cmd, labels in COMMANDS.items()]
