@@ -1,8 +1,11 @@
 from telebot.types import BotCommand
-from config_data.config import DEFAULT_COMMANDS
+from utils.i18n import get_commands_for_lang, TMDB_LANG
 
 
 def set_default_commands(bot):
-    bot.set_my_commands(
-        [BotCommand(*i) for i in DEFAULT_COMMANDS]
-    )
+    for lang in TMDB_LANG.keys():
+        commands = [
+            BotCommand(command, description)
+            for command, description in get_commands_for_lang(lang)
+        ]
+        bot.set_my_commands(commands, language_code=lang)

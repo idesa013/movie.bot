@@ -13,18 +13,11 @@ ADMIN_IDS = [int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if x.
 
 DB_PATH = "database/database.db"
 
-DEFAULT_COMMANDS_RU = (
+DEFAULT_COMMANDS = (
     ("start", "Запустить бота"),
     ("help", "Вывести справку"),
     ("registration", "Зарегистрироваться"),
     ("history", "Показать историю поисков"),
-)
-
-DEFAULT_COMMANDS_EN = (
-    ("start", "Start the bot"),
-    ("help", "Show help"),
-    ("registration", "Register"),
-    ("history", "Show search history"),
 )
 
 DATE_FORMAT = "%d.%m.%Y %H:%M"
