@@ -41,8 +41,8 @@ HISTORY_TEXT = {
         "en": "From",
     },
     "fav": {
-        "ru": "Fav",
-        "en": "Fav",
+        "ru": "Favorite",
+        "en": "Избранное",
     },
     "movie": {
         "ru": "фильм",

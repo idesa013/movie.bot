@@ -87,20 +87,20 @@ TEXT = {
 
 COMMANDS = {
     "start": {
-        "en": "Start the bot",
-        "ru": "Запустить бота",
+        LANG_EN: "Start the bot",
+        LANG_RU: "Запустить бота",
     },
     "help": {
-        "en": "Show help",
-        "ru": "Вывести справку",
+        LANG_EN: "Show help",
+        LANG_RU: "Вывести справку",
     },
     "registration": {
-        "en": "Register",
-        "ru": "Зарегистрироваться",
+        LANG_EN: "Register",
+        LANG_RU: "Зарегистрироваться",
     },
     "history": {
-        "en": "Show search history",
-        "ru": "Показать историю поисков",
+        LANG_EN: "Show search history",
+        LANG_RU: "Показать историю поисков",
     },
 }
 
@@ -149,3 +149,9 @@ def ensure_registered(bot, chat_id: int, user_id: int) -> bool:
         reply_markup=get_registration_required_keyboard(lang),
     )
     return False
+
+
+def get_commands_for_lang(lang: str) -> list[tuple[str, str]]:
+    if lang not in TMDB_LANG:
+        lang = LANG_EN
+    return [(cmd, titles.get(lang, cmd)) for cmd, titles in COMMANDS.items()]
