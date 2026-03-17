@@ -1,4 +1,6 @@
 import importlib
+import traceback
+
 from utils.i18n import get_user_language, LANG_EN
 
 
@@ -37,7 +39,7 @@ def route_menu_or_command(bot, message) -> bool:
             return False
 
         module, func = target
-        handler = getattr(__import__(module, fromlist=[func]), func)
+        handler = load_handler(module, func)
         handler(message)
         return True
 
@@ -52,15 +54,15 @@ def route_menu_or_command(bot, message) -> bool:
         routes = {
             # основное меню
             main_pack["movie"]: (
-                "handlers.custom_handlers.movie_start",
+                "handlers.custom_handlers.movie.movie_start",
                 "start_movie_search",
             ),
             main_pack["actor"]: (
-                "handlers.custom_handlers.actor_search_start",
+                "handlers.custom_handlers.actor.actor_search_start",
                 "start_actor_search",
             ),
             main_pack["director"]: (
-                "handlers.custom_handlers.director_search_start",
+                "handlers.custom_handlers.director.director_search_start",
                 "start_director_search",
             ),
             main_pack["favorites"]: (
@@ -84,15 +86,15 @@ def route_menu_or_command(bot, message) -> bool:
                 "show_favorite_directors",
             ),
             main_pack["rec_new"]: (
-                "handlers.custom_handlers.movie_start",
+                "handlers.custom_handlers.movie.movie_start",
                 "show_new_recommendations",
             ),
             main_pack["rec_genre"]: (
-                "handlers.custom_handlers.movie_start",
+                "handlers.custom_handlers.movie.movie_start",
                 "show_recommendations",
             ),
             main_pack["rec_new_genre"]: (
-                "handlers.custom_handlers.movie_start",
+                "handlers.custom_handlers.movie.movie_start",
                 "show_new_genre_recommendations",
             ),
             main_pack["back"]: (
@@ -101,43 +103,42 @@ def route_menu_or_command(bot, message) -> bool:
             ),
             # админ
             admin_pack["admin_panel"]: (
-                "handlers.custom_handlers.admin_panel",
+                "handlers.custom_handlers.admin.admin_panel",
                 "open_admin_panel",
             ),
             admin_pack["users"]: (
-                "handlers.custom_handlers.admin_panel",
+                "handlers.custom_handlers.admin.admin_panel",
                 "show_users_list",
             ),
             admin_pack["messages"]: (
-                "handlers.custom_handlers.admin_panel",
+                "handlers.custom_handlers.admin.admin_panel",
                 "open_blocked_messages_users",
             ),
             admin_pack["search_user"]: (
-                "handlers.custom_handlers.admin_panel",
+                "handlers.custom_handlers.admin.admin_panel",
                 "admin_search_user",
             ),
             admin_pack["search_blocked"]: (
-                "handlers.custom_handlers.admin_panel",
+                "handlers.custom_handlers.admin.admin_panel",
                 "admin_search_blocked_user",
             ),
             admin_pack["back_to_menu"]: (
-                "handlers.custom_handlers.admin_panel",
+                "handlers.custom_handlers.admin.admin_panel",
                 "admin_back_to_main_menu",
             ),
         }
 
         target = routes.get(txt)
-
         if target:
             clear_state()
-
             module, func = target
             handler = load_handler(module, func)
-
             handler(message)
             return True
 
-    except Exception:
+    except Exception as e:
+        print(f"[menu_router] route_menu_or_command error: {e}")
+        traceback.print_exc()
         return False
 
     return False
