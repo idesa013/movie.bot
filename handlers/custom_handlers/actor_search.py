@@ -1,23 +1,25 @@
 from telebot.types import Message
 
+from api.tmdb_actor import search_actor, get_actor_movie_credits
 from loader import bot
 from states.actor import ActorSearchState
-from api.tmdb_actor import search_actor, get_actor_movie_credits
-from utils.person_service import send_actor_card
+from utils.access import ensure_user_not_blocked
 from utils.i18n import get_user_language, tmdb_language, t
 from utils.menu_router import route_menu_or_command
-from utils.access import ensure_user_not_blocked
+from utils.person_service import send_actor_card
+from utils.search_helpers import pick_best_person_result
 
 
 def _has_non_doc_actor_movies(actor_id: int, tmdb_lang: str) -> bool:
     credits = get_actor_movie_credits(actor_id, language=tmdb_lang) or {}
     cast = credits.get("cast", []) or []
-    non_doc = [m for m in cast if 99 not in (m.get("genre_ids") or [])]
+    non_doc = [movie for movie in cast if 99 not in (movie.get("genre_ids") or [])]
     return len(non_doc) > 0
 
 
 @bot.message_handler(
-    state=ActorSearchState.waiting_for_actor_name, content_types=["text"]
+    state=ActorSearchState.waiting_for_actor_name,
+    content_types=["text"],
 )
 def process_actor_search(message: Message):
     if not ensure_user_not_blocked(bot, message.chat.id, message.from_user.id):
@@ -32,31 +34,35 @@ def process_actor_search(message: Message):
     tmdb_lang = tmdb_language(lang)
 
     query = (message.text or "").strip()
+
     if not query:
         bot.send_message(chat_id, t(lang, "enter_actor_name"))
         return
 
     data = search_actor(query, language=tmdb_lang)
     results = data.get("results") or []
+
     if not results:
         bot.send_message(chat_id, t(lang, "actor_not_found_retry"))
         return
 
-    actors = [p for p in results if p.get("known_for_department") == "Acting"]
-    actors.sort(key=lambda x: x.get("popularity", 0), reverse=True)
-
-    actor_id = None
-    for p in actors[:12]:
-        pid = p.get("id")
-        if not pid:
-            continue
-        if _has_non_doc_actor_movies(int(pid), tmdb_lang):
-            actor_id = int(pid)
-            break
+    actor_id = pick_best_person_result(
+        results=results,
+        query=query,
+        department="Acting",
+        validator=_has_non_doc_actor_movies,
+        tmdb_lang=tmdb_lang,
+    )
 
     if not actor_id:
         bot.send_message(chat_id, t(lang, "actor_not_found_retry"))
         return
 
-    send_actor_card(chat_id, user_id, actor_id, searched_from="actor")
+    send_actor_card(
+        chat_id,
+        user_id,
+        actor_id,
+        searched_from="actor",
+    )
+
     bot.delete_state(user_id, chat_id)
