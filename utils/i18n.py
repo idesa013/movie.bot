@@ -149,10 +149,3 @@ def ensure_registered(bot, chat_id: int, user_id: int) -> bool:
         reply_markup=get_registration_required_keyboard(lang),
     )
     return False
-
-
-def get_commands_for_lang(lang: str) -> list[tuple[str, str]]:
-    lang = lang if lang in SUPPORTED_LANGS else LANG_EN
-    return [
-        (command, titles.get(lang, command)) for command, titles in COMMANDS.items()
-    ]
